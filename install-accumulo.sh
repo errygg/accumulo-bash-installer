@@ -1,34 +1,45 @@
 #!/bin/bash
 
+configs () {
+  if [ -n "${CONFIG_FILE}" ]; then
+    echo "Using config file ${CONFIG_FILE}"
+  else
+    echo "No config file, gathering config info"
+  fi
+}
+
+usage () {
+  echo "Usage:  ./install-accumulo.sh [options]"
+  echo "  -f config_file (load configs instead of prompting)"
+  echo "  -h display this message (other options ignored)"
+  exit 0;
+}
 
 
 main () {
   echo "The Accumulo Installer Script...."
   # parse args here
-  echo "Num Args: $#"
-  if [ $# -eq 0 ]; then
-    echo "No args passed in"
-  else
-    echo "Args: $*"
-    args=`getopt fh $*`
-    set -- $args
-    for i
-    do
-      case "$i"
-      in 
-        -f)
-          echo "-f set"
-          echo flag $i set; sflags="${i#-}$sflags";
-          shift;;
-        -h)
-          echo "-h set"
-          shift;;
-        --)
-          shift; break;;
-      esac
-    done
-  fi
+  while (( $# > 0 ))
+  do
+      token="$1"
+      shift
+      if [ "${token}" == "-f" ]; then
+        if [ -f "${1}" ]; then
+          CONFIG_FILE=$1
+        else
+          echo "ERROR: config file '${1}' does not exist"
+          usage
+        fi
+        shift 
+      elif [ "${token}" == "-h" ]; then
+        usage
+      else
+        echo "ERROR: unknown option"
+        usage
+      fi
+  done
   # setup configs and prereqs
+  configs 
   # install hadoop
   # install zookeeper
   # install accumulo
