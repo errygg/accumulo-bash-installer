@@ -2,16 +2,24 @@
 
 configs () {
   if [ -n "${CONFIG_FILE}" ]; then
+    # Load variables from file
     echo "Using config file ${CONFIG_FILE}"
   else
+    # get all variable from user
     echo "No config file, gathering config info"
   fi
+  # check os
+  # get install directory
+  # get java_home
+  # check ssh localhost
+  # TODO: ask which version of accumulo.  Need a good way to manage
 }
 
 usage () {
   echo "Usage:  ./install-accumulo.sh [options]"
   echo "  -f config_file (load configs instead of prompting)"
   echo "  -h display this message (other options ignored)"
+  # TODO: add options here.  Make passed in options override -f options
   exit 0;
 }
 
