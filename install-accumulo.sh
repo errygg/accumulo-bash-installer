@@ -1,56 +1,71 @@
 #!/bin/bash
 
+
+usage () {
+  # TODO: add options here.  Make passed in options override -f options
+  cat <<-EOF
+  Usage:  ./install-accumulo.sh [options]
+
+  Options:
+
+    -h                  display this message
+    -f <config_file>    load configs from instead of prompting
+
+EOF
+}
+
+abort() {
+  echo 
+  echo " $@" 1>&2
+  echo 
+  exit 1
+}
+
+
+log() {
+  echo "  o $@"
+}
+
+set_config_file () {
+  test -f $1 || abort "invalid config file, '$1' does not exist"
+  CONFIG_FILE=$1
+}
+
 configs () {
-  if [ -n "${CONFIG_FILE}" ]; then
-    # Load variables from file
-    echo "Using config file ${CONFIG_FILE}"
-  else
-    # get all variable from user
-    echo "No config file, gathering config info"
-  fi
   # check os
   # get install directory
   # get java_home
   # check ssh localhost
   # TODO: ask which version of accumulo.  Need a good way to manage
+  if [[ -n "${CONFIG_FILE}" ]]; then
+    log "Using $CONFIG_FILE"
+  else
+    log "No config file"
+  fi
 }
 
-usage () {
-  echo "Usage:  ./install-accumulo.sh [options]"
-  echo "  -f config_file (load configs instead of prompting)"
-  echo "  -h display this message (other options ignored)"
-  # TODO: add options here.  Make passed in options override -f options
-  exit 0;
-}
 
 
 main () {
   echo "The Accumulo Installer Script...."
-  # parse args here
-  while (( $# > 0 ))
-  do
-      token="$1"
-      shift
-      if [ "${token}" == "-f" ]; then
-        if [ -f "${1}" ]; then
-          CONFIG_FILE=$1
-        else
-          echo "ERROR: config file '${1}' does not exist"
-          usage
-        fi
-        shift 
-      elif [ "${token}" == "-h" ]; then
-        usage
-      else
-        echo "ERROR: unknown option"
-        usage
-      fi
-  done
   # setup configs and prereqs
   configs 
   # install hadoop
   # install zookeeper
   # install accumulo
 }
+
+# parse args here
+while test $# -ne 0; do 
+  arg=$1; shift
+  case $arg in
+    -h) usage; exit 0 ;;
+    -f) set_config_file $1; shift ;;
+    *)
+      usage
+      abort "ERROR - unknown option : ${arg}"
+      ;;
+  esac
+done
 
 main $*
