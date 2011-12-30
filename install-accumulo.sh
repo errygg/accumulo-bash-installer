@@ -16,6 +16,7 @@ EOF
 
 abort() {
   echo 
+  red "Aborting....."
   red "$@" 1>&2
   echo 
   exit 1
@@ -23,7 +24,7 @@ abort() {
 
 
 log() {
-  echo "  $@"
+  echo "$@"
 }
 
 red() {
@@ -42,15 +43,34 @@ set_config_file () {
 
 configs () {
   # check os
-  # get install directory
-  # get java_home
-  # check ssh localhost
-  # TODO: ask which version of accumulo.  Need a good way to manage
+  PLATFORM=`uname`
+  case $PLATFORM in
+    "Darwin") log "You are installing to OS: ${PLATFORM}" ;;
+    *)
+      abort "Installer does not support ${PLATFORM}"
+  esac
   if [[ -n "${CONFIG_FILE}" ]]; then
-    log "Using $CONFIG_FILE"
+    log "Using $CONFIG_FILE.  Here is the contents"
+    cat $CONFIG_FILE
   else
     log "No config file"
   fi
+  # get install directory
+  if [[ -n $INSTALL_DIR ]]; then
+    #TODO test this with configs and options
+    log "Install directory already set to ${INSTALL_DIR}"
+  else
+    green "Enter the install directory"
+    read -e INSTALL_DIR
+  fi
+  if [[ -d $INSTALL_DIR ]]; then 
+    abort "Directory '${INSTALL_DIR}' already exists. You must install to a new directory."
+  fi
+  mkdir -p $INSTALL_DIR
+  
+  # get java_home
+  # check ssh localhost
+  # TODO: ask which version of accumulo.  Need a good way to manage
 }
 
 
