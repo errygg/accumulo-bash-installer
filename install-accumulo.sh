@@ -16,14 +16,23 @@ EOF
 
 abort() {
   echo 
-  echo " $@" 1>&2
+  red "$@" 1>&2
   echo 
   exit 1
 }
 
 
 log() {
-  echo "  o $@"
+  echo "  $@"
+}
+
+red() {
+  # TODO: test on linux, works on Mac OSX
+  echo -e "\033[1;31m$@\033[0m"
+}
+
+green() {
+  echo -e "\033[1;32m$@\033[0m"
 }
 
 set_config_file () {
@@ -47,7 +56,7 @@ configs () {
 
 
 main () {
-  echo "The Accumulo Installer Script...."
+  green "The Accumulo Installer Script...."
   # setup configs and prereqs
   configs 
   # install hadoop
