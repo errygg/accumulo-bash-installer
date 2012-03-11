@@ -1,6 +1,10 @@
 #!/bin/bash
 
 cleanup_from_abort() {
+    # stop accumulo if running
+    # stop zookeeper if running
+    # stop hadoop if running
+    # remove install directory (May have to pass this in)
     if [[ -d $INSTALL_DIR ]]; then
         red "Removing ${INSTALL_DIR}"
         rm -rf ${INSTALL_DIR}
@@ -62,7 +66,7 @@ setup_configs () {
     log "Setting up configuration and checking requirements..." "${INDENT}"
     INDENT="    "
   # check os
-    PLATFORM=`uname`
+    local PLATFORM=`uname`
     case $PLATFORM in
         "Darwin") log "You are installing to OS: ${PLATFORM}" "${INDENT}";;
         *)
@@ -125,6 +129,11 @@ install_hadoop() {
     local INDENT="  "
     log "Installing Hadoop..." "${INDENT}"
     INDENT="    "
+    # ensure file in archive directory
+    # install from archive
+    # configure properties
+    # start hadoop
+    # test installation
 }
 
 install_zookeeper() {
@@ -132,6 +141,11 @@ install_zookeeper() {
     local INDENT="  "
     log "Installing Zookeeper..." "${INDENT}"
     INDENT="    "
+    # ensure file in archive directory
+    # install from archive
+    # configure properties
+    # start zookeeper
+    # test installation
 }
 
 install_accumulo() {
@@ -139,6 +153,11 @@ install_accumulo() {
     local INDENT="  "
     log "Installing Accumulo..." "${INDENT}"
     INDENT="    "
+    # ensure file in archive directory
+    # install from archive
+    # configure properties
+    # start zookeeper
+    # test installation
 }
 
 post_install() {
@@ -146,6 +165,9 @@ post_install() {
     local INDENT="  "
     log "Running post install...." "${INDENT}"
     INDENT="    "
+    # setup bin directory
+    # add helpers
+    # message about sourcing accumulo-env
     cleanup_from_abort #TODO: remove once this script is working
 }
 
@@ -168,25 +190,25 @@ EOF
 }
 
 main () {
-        green "The Accumulo Installer Script...."
-        setup_configs
-        install_hadoop
-        install_zookeeper
-        install_accumulo
-        post_install
-    }
+    green "The Accumulo Installer Script...."
+    setup_configs
+    install_hadoop
+    install_zookeeper
+    install_accumulo
+    post_install
+}
 
 # parse args here
-    while test $# -ne 0; do
-        arg=$1; shift
-        case $arg in
-            -h) usage; exit 0 ;;
-            -f) set_config_file $1; shift ;;
-            *)
-                usage
-                abort "ERROR - unknown option : ${arg}"
-                ;;
-        esac
-    done
+while test $# -ne 0; do
+    arg=$1; shift
+    case $arg in
+        -h) usage; exit 0 ;;
+        -f) set_config_file $1; shift ;;
+        *)
+            usage
+            abort "ERROR - unknown option : ${arg}"
+            ;;
+    esac
+done
 
-    main $*
+main $*
