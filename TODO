@@ -1,0 +1,8 @@
+- Code hadoop install
+- Code zookeeper install
+- Code accumulo install
+- Split file into parts
+- Test each part
+- Makefile to test and assemble one script
+- Update readme
+- Test on linux
