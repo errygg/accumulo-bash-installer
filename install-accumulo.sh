@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
+
 cleanup_from_abort() {
     # stop accumulo if running
     # stop zookeeper if running
@@ -74,7 +76,7 @@ setup_configs () {
     esac
 
   # check for a config file
-    if [[ -n "${CONFIG_FILE}" ]]; then
+    if [ -n "${CONFIG_FILE}" ]; then
         log "Using $CONFIG_FILE.  Here is the contents" "${INDENT}"
         cat $CONFIG_FILE
     else
@@ -92,7 +94,7 @@ setup_configs () {
     fi
 
   # check install direcotry
-    if [[ -d $INSTALL_DIR ]]; then
+    if [ -d $INSTALL_DIR ]; then
         abort "Directory '${INSTALL_DIR}' already exists. You must install to a new directory." "${INDENT}"
     else
         log "Creating directory ${INSTALL_DIR}" "${INDENT}"
@@ -100,12 +102,12 @@ setup_configs () {
     fi
 
   # get java_home
-    if [[ ! -n $JAVA_HOME ]]; then
+    if [ ! -n $JAVA_HOME ]; then
         JAVA_HOME=$(read_input "Enter JAVA_HOME location" "${INDENT}")
     fi
 
   # check java_home
-    if [[ ! -d $JAVA_HOME ]]; then
+    if [ ! -d $JAVA_HOME ]; then
         abort "JAVA_HOME does not exist: ${JAVA_HOME}" "${INDENT}"
     else
         log "JAVA_HOME set to ${JAVA_HOME}" "${INDENT}"
@@ -121,15 +123,73 @@ setup_configs () {
         abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless" "${INDENT}"
     fi
 
+    if [ ! -d "${ARCHIVE_DIR}" ]; then
+        log "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
+        mkdir "${ARCHIVE_DIR}"
+    fi
+
   # TODO: ask which version of accumulo.  Need a good way to manage
 }
 
+download_file() {
+    local DEST_LOC=$1
+    local SOURCE_LOC=$2
+    local SOURCE_ASC=$3
+    local INDENT="      "
+    log "Downloading ${SOURCE_LOC} to ${DEST_LOC}" "${INDENT}"
+    log "Please wait..." "${INDENT}"
+    # test to see if curl is installed
+    # run curl script here
+}
+
+verify_file() {
+    # add option to skip verification
+    # test to see if gpg is install
+    # yes
+    #  try to verify key
+    #    gpg ASC_FILE
+    #  if return status 2
+    #    grab key and install
+    #      curl -l http://mirrors.ibiblio.org/apache/hadoop/common/KEYS ARCHIVE_DIR/KEYS
+    #      gpg --import KEYS
+    #    grab asc file
+    #      curl -l ASC_FILE ARCHIVE_DIR/filename.asc
+    #    verify again
+    #      gpg ASC_FILE
+    #      back to start
+    #  if return status 0
+    #    file is good
+    #  else
+    #    file is bad
+    #    remove if signature fails and abort
+    # no
+    #  give warning
+    # TOO MUCH
+    # try once, give warning and link if fails, ask if want to continue and then do so
+    # see http://www.apache.org/info/verification.html
+    # gpg --verify asc_file data_file
+}
+
 install_hadoop() {
-    log
     local INDENT="  "
+    local HADOOP_VERSION="0.20.2"
+    local HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
+    local HADOOP_MIRROR="http://mirrors.ibiblio.org/apache/hadoop/common/hadoop-0.20.2"
+    local HADOOP_DOWNLOAD="${HADOOP_MIRROR}/${HADOOP_FILENAME}"
+    local HADOOP_ASC="${HADOOP_DOWNLOAD}.asc"
+    local ARCHIVE_FILE="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
+    log
     log "Installing Hadoop..." "${INDENT}"
     INDENT="    "
     # ensure file in archive directory
+    log "Checking for install file ${HADOOP_FILENAME}" "${INDENT}"
+    INDENT="      "
+    if [ ! -e "${ARCHIVE_FILE}" ]; then
+        download_file "${ARCHIVE_FILE}" "${HADOOP_DOWNLOAD}" "${HADOOP_ASC}"
+    else
+        log "Using ${ARCHIVE_FILE}" "${INDENT}"
+    fi
+    verify_file "${ARCHIVE_FILE}" "${HADOOP_ASC}"
     # install from archive
     # configure properties
     # start hadoop
