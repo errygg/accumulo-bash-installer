@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
+LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
 
 cleanup_from_abort() {
     # stop accumulo if running
@@ -17,6 +18,7 @@ cleanup_from_abort() {
 log() {
     local MESSAGE=$1
     local INDENT=$2
+    echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
     echo -e "${INDENT}${MESSAGE}"
 }
 
@@ -168,6 +170,7 @@ verify_file() {
     # try once, give warning and link if fails, ask if want to continue and then do so
     # see http://www.apache.org/info/verification.html
     # gpg --verify asc_file data_file
+    local a=1
 }
 
 install_hadoop() {
