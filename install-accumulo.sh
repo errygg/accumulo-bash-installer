@@ -133,18 +133,54 @@ setup_configs () {
   # TODO: ask which version of accumulo.  Need a good way to manage
 }
 
-download_file() {
-    local DEST_LOC=$1
-    local SOURCE_LOC=$2
-    local SOURCE_ASC=$3
-    local INDENT="      "
-    log "Downloading ${SOURCE_LOC} to ${DEST_LOC}" "${INDENT}"
-    log "Please wait..." "${INDENT}"
-    # test to see if curl is installed
-    # run curl script here
+check_curl() {
+    if [ -z $CURL ]; then
+      which curl > /dev/null && CURL=1
+      if [ -z $CURL ]; then
+        abort "Could not find curl on your path"
+      fi
+    fi
+}
+
+get_file() {
+    local FILE_DEST=$1
+    local FILE_SRC=$2
+    local ASC_DEST=$3
+    local ASC_SRC=$4
+    local INDENT=$5
+    if [ ! -e "${FILE_DEST}" ]; then
+        log "Downloading ${FILE_SRC} to ${FILE_DEST}" "${INDENT}"
+        log "Please wait..." "${INDENT}"
+        check_curl
+        # get the file
+        if curl -L ${FILE_SRC} -o ${FILE_DEST}; then
+            true
+        else
+            abort "Could not download ${FILE_SRC}"
+        fi
+        if [ ! -e "${ASC_DEST}" ]; then
+          if curl -L ${ASC_SRC} -o ${ASC_DEST}; then
+              true
+          else
+              abort "Could not download ${ASC_SRC}"
+          fi
+        fi
+        log "Verifying ${FILE_DEST} with ${ASC_DEST}"
+        blue "need to actually verify here and prompt if fails"
+    else
+        log "Using file ${FILE_DEST}" "${INDENT}"
+    fi
+
 }
 
 verify_file() {
+    local FILE=$1
+    local SIG_DEST=$2
+    local SIG_SRC=$3
+    local INDENT=$4
+    log "Verifying the signature of ${FILE}" "${INDENT}"
+    get_file "${SIG_DEST}" "${SIG_SRC}" "${INDENT}"
+
     # add option to skip verification
     # test to see if gpg is install
     # yes
@@ -170,29 +206,27 @@ verify_file() {
     # try once, give warning and link if fails, ask if want to continue and then do so
     # see http://www.apache.org/info/verification.html
     # gpg --verify asc_file data_file
-    local a=1
 }
 
 install_hadoop() {
     local INDENT="  "
     local HADOOP_VERSION="0.20.2"
+    local MIRROR="http://mirrors.ibiblio.org/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
+
+    # hadoop archive file
     local HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
-    local HADOOP_MIRROR="http://mirrors.ibiblio.org/apache/hadoop/common/hadoop-0.20.2"
-    local HADOOP_DOWNLOAD="${HADOOP_MIRROR}/${HADOOP_FILENAME}"
-    local HADOOP_ASC="${HADOOP_DOWNLOAD}.asc"
-    local ARCHIVE_FILE="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
+    local HADOOP_SOURCE="${MIRROR}/${HADOOP_FILENAME}"
+    local HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
+
+    # asc file
+    local ASC_FILENAME="${HADOOP_FILENAME}.asc"
+    local ASC_SOURCE="${MIRROR}/${ASC_FILENAME}"
+    local ASC_DEST="${ARCHIVE_DIR}/${ASC_FILENAME}"
+
     log
     log "Installing Hadoop..." "${INDENT}"
     INDENT="    "
-    # ensure file in archive directory
-    log "Checking for install file ${HADOOP_FILENAME}" "${INDENT}"
-    INDENT="      "
-    if [ ! -e "${ARCHIVE_FILE}" ]; then
-        download_file "${ARCHIVE_FILE}" "${HADOOP_DOWNLOAD}" "${HADOOP_ASC}"
-    else
-        log "Using ${ARCHIVE_FILE}" "${INDENT}"
-    fi
-    verify_file "${ARCHIVE_FILE}" "${HADOOP_ASC}"
+    get_file "${HADOOP_DEST}" "${HADOOP_SOURCE}" "${ASC_DEST}" "${ASC_SRC}" "${INDENT}"
     # install from archive
     # configure properties
     # start hadoop
@@ -252,7 +286,7 @@ usage () {
 EOF
 }
 
-main () {
+install () {
     green "The Accumulo Installer Script...."
     setup_configs
     install_hadoop
@@ -265,6 +299,7 @@ main () {
 while test $# -ne 0; do
     arg=$1; shift
     case $arg in
+        --no-run) NO_RUN=1; shift ;; # allows sourcing without a run
         -h) usage; exit 0 ;;
         -f) set_config_file $1; shift ;;
         *)
@@ -274,4 +309,6 @@ while test $# -ne 0; do
     esac
 done
 
-main $*
+if [ -z $NO_RUN ]; then
+  install $*
+fi
