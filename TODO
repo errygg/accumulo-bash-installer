@@ -1,4 +1,3 @@
-- Code hadoop install
 - Code zookeeper install
 - Code accumulo install
 - Split file into parts
@@ -7,3 +6,4 @@
 - Update readme
 - Test on linux
 - Catch CTRL-C and run abort
+- Update to hadoop 0.20.203?
