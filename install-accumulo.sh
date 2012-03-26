@@ -8,6 +8,10 @@ HADOOP_VERSION="0.20.2"
 HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
 
 cleanup_from_abort() {
+    if [ ! -z NO_RUN ]; then
+        # no need to cleanup, user specified --no-run
+        return
+    fi
     # stop accumulo if running
     # stop zookeeper if running
     # stop hadoop if running
@@ -452,6 +456,11 @@ set_config_file () {
     CONFIG_FILE=$1
 }
 
+set_install_dir() {
+    test ! -d $1 || abort "Directory '$1' already exists. You must install to a new directory."
+    INSTALL_DIR=$1
+}
+
 usage () {
   # TODO: add options here.  Make passed in options override -f options
     cat <<-EOF
@@ -488,7 +497,7 @@ while test $# -ne 0; do
         --no-run) NO_RUN=1; shift ;; # allows sourcing without a run
         -h) usage; exit 0 ;;
         -f) set_config_file $1; shift ;;
-        -d|--directory) INSTALL_DIR=$1; shift ;;
+        -d|--directory) set_install_dir $1; shift ;;
         *)
             usage
             abort "ERROR - unknown option : ${arg}"
@@ -497,5 +506,10 @@ while test $# -ne 0; do
 done
 
 if [ -z $NO_RUN ]; then
-  install $*
+    install $*
+else
+    # useful for testing
+    blue "--no-run passed in, dumping configs"
+    blue "INSTALL_DIR: ${INSTALL_DIR}"
+    blue "CONFIG_FILE: ${CONFIG_FILE}"
 fi
