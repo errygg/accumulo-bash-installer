@@ -5,7 +5,7 @@ shopt -s compat31
 ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
 LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
 HADOOP_VERSION="0.20.2"
-HADOOP_MIRROR="http://mirrors.ibiblio.org/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
+HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
 
 cleanup_from_abort() {
     # stop accumulo if running
@@ -77,6 +77,15 @@ read_input() {
 }
 
 setup_configs () {
+
+    # ensure the archive directory exists
+    if [ -d "${ARCHIVE_DIR}" ]; then
+        yellow "Archive directory ${ARCHIVE_DIR} exists" "${INDENT}"
+    else
+        yellow "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
+        mkdir "${ARCHIVE_DIR}"
+    fi
+
     log
     local INDENT="  "
     yellow "Setting up configuration and checking requirements..." "${INDENT}"
@@ -140,11 +149,6 @@ setup_configs () {
         yellow "SSH appears good" "${INDENT}"
     else
         abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless" "${INDENT}"
-    fi
-
-    if [ ! -d "${ARCHIVE_DIR}" ]; then
-        yellow "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
-        mkdir "${ARCHIVE_DIR}"
     fi
 
   # TODO: ask which version of accumulo.  Need a good way to manage
