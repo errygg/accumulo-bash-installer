@@ -12,7 +12,7 @@ cleanup_from_abort() {
     # stop zookeeper if running
     # stop hadoop if running
     if [ -d "${HADOOP_HOME}" ]; then
-        red "Shutting down hadoop"
+        red "Found hadoop, attempting to shutdown"
         "${HADOOP_HOME}/bin/stop-all.sh"
     fi
     # remove install directory (May have to pass this in)

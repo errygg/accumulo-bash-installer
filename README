@@ -16,7 +16,7 @@ To run this script, simply execute the install-accumulo.sh script.  The -h optio
 
 If you want to install Accumulo without forking this repo, simply run the following:
 
-bash < <(curl -s https://raw.github.com/mjwall/accumulo-bash-installer/master/install-accumulo.sh)
+bash <(curl -s https://raw.github.com/mjwall/accumulo-bash-installer/master/install-accumulo.sh)
 
 Prerequistes
 
