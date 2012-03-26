@@ -98,7 +98,7 @@ setup_configs () {
     fi
 
   # get install directory
-    if [ -n $INSTALL_DIR ]; then
+    if [ -n "${INSTALL_DIR}" ]; then
     #TODO test this with configs and options
         yellow "Install directory set to ${INSTALL_DIR} by command line option" "${INDENT}"
     else
@@ -121,7 +121,7 @@ setup_configs () {
     mkdir -p "${HDFS_DIR}"
 
   # get java_home
-    if [ ! -n $JAVA_HOME ]; then
+    if [ ! -n "${JAVA_HOME}" ]; then
         JAVA_HOME=$(read_input "Enter JAVA_HOME location" "${INDENT}")
     fi
 
@@ -137,7 +137,7 @@ setup_configs () {
     local HOSTNAME=$(hostname)
     local SSH_HOST=$(ssh -o 'PreferredAuthentications=publickey' localhost "hostname")
     if [[ "${HOSTNAME}" == "${SSH_HOST}" ]]; then
-        yellow "SSH appear good" "${INDENT}"
+        yellow "SSH appears good" "${INDENT}"
     else
         abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless" "${INDENT}"
     fi
