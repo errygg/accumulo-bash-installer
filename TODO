@@ -6,3 +6,4 @@
 - Makefile to test and assemble one script
 - Update readme
 - Test on linux
+- Catch CTRL-C and run abort

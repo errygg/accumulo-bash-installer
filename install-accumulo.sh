@@ -86,9 +86,9 @@ setup_configs () {
     fi
 
   # get install directory
-    if [[ -n $INSTALL_DIR ]]; then
+    if [ -n $INSTALL_DIR ]; then
     #TODO test this with configs and options
-        log "Install directory already set to ${INSTALL_DIR}" "${INDENT}"
+        log "Install directory set to ${INSTALL_DIR} by command line option" "${INDENT}"
     else
         while [ "${INSTALL_DIR}x" == "x" ]; do
             INSTALL_DIR=$(read_input "Enter install directory" "${INDENT}")
@@ -135,78 +135,81 @@ setup_configs () {
 
 check_curl() {
     if [ -z $CURL ]; then
-      which curl > /dev/null && CURL=1
-      if [ -z $CURL ]; then
-        abort "Could not find curl on your path"
-      fi
+        which curl > /dev/null && CURL=1
+        if [ -z $CURL ]; then
+          abort "Could not find curl on your path"
+        fi
     fi
 }
 
-get_file() {
+check_gpg() {
+    if [ -z $GPG ]; then
+        which gpg > /dev/null && GPG=1
+        if [ -z $GPG ]; then
+            abort "Could not find gpg on your path"
+        fi
+    fi
+}
+
+verify_file() {
+    local FILE=$1
+    local SIG=$2
+    local INDENT=$3
+    log "Verifying the signature of ${FILE}" "${INDENT}"
+    gpg --verify "${SIG}" "${FILE}"
+    local verified=$?
+    if [ "$verified" -gt 0 ]; then
+        red "Verification failed" "${INDENT}"
+        local loop=0
+        local cont=""
+        while [ "$loop" -lt 1 ]; do
+            cont=$(read_input "Do you want to continue anyway [y/n]" "${INDENT}")
+            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N"]; then
+                loop=1
+            fi
+        done
+        if [ "${cont}" == "y" ] || [ "${cont}" == "Y" ]; then
+            log "Ok, installing unverified file" "${INDENT}"
+        else
+            abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html" "${INDENT}"
+        fi
+    else
+        log "Verification passed" "${INDENT}"
+    fi
+}
+
+download_file() {
+    local DEST=$1
+    local SRC=$2
+    local INDENT=$3
+    check_curl
+    # get the file
+    log "Downloading ${SRC} to ${DEST}" "${INDENT}"
+    log "Please wait..." "${INDENT}"
+    if curl -L "${SRC}" -o "${DEST}"; then
+        true
+    else
+        abort "Could not download ${SRC}"
+    fi
+}
+
+ensure_file() {
     local FILE_DEST=$1
     local FILE_SRC=$2
-    local ASC_DEST=$3
-    local ASC_SRC=$4
-    local INDENT=$5
+    local INDENT=$3
     if [ ! -e "${FILE_DEST}" ]; then
-        log "Downloading ${FILE_SRC} to ${FILE_DEST}" "${INDENT}"
-        log "Please wait..." "${INDENT}"
-        check_curl
-        # get the file
-        if curl -L ${FILE_SRC} -o ${FILE_DEST}; then
-            true
-        else
-            abort "Could not download ${FILE_SRC}"
+        download_file "${FILE_DEST}" "${FILE_SRC}" "${INDENT}"
+        if [ ! -e "${FILE_DEST}.asc" ]; then
+            download_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" "${INDENT}"
         fi
-        if [ ! -e "${ASC_DEST}" ]; then
-          if curl -L ${ASC_SRC} -o ${ASC_DEST}; then
-              true
-          else
-              abort "Could not download ${ASC_SRC}"
-          fi
-        fi
-        log "Verifying ${FILE_DEST} with ${ASC_DEST}"
-        blue "need to actually verify here and prompt if fails"
+        log "Verifying ${FILE_DEST}"
+        verify_file "${FILE_DEST}" "${FILE_DEST}.asc" "${INDENT}"
     else
         log "Using file ${FILE_DEST}" "${INDENT}"
     fi
 
 }
 
-verify_file() {
-    local FILE=$1
-    local SIG_DEST=$2
-    local SIG_SRC=$3
-    local INDENT=$4
-    log "Verifying the signature of ${FILE}" "${INDENT}"
-    get_file "${SIG_DEST}" "${SIG_SRC}" "${INDENT}"
-
-    # add option to skip verification
-    # test to see if gpg is install
-    # yes
-    #  try to verify key
-    #    gpg ASC_FILE
-    #  if return status 2
-    #    grab key and install
-    #      curl -l http://mirrors.ibiblio.org/apache/hadoop/common/KEYS ARCHIVE_DIR/KEYS
-    #      gpg --import KEYS
-    #    grab asc file
-    #      curl -l ASC_FILE ARCHIVE_DIR/filename.asc
-    #    verify again
-    #      gpg ASC_FILE
-    #      back to start
-    #  if return status 0
-    #    file is good
-    #  else
-    #    file is bad
-    #    remove if signature fails and abort
-    # no
-    #  give warning
-    # TOO MUCH
-    # try once, give warning and link if fails, ask if want to continue and then do so
-    # see http://www.apache.org/info/verification.html
-    # gpg --verify asc_file data_file
-}
 
 install_hadoop() {
     local INDENT="  "
@@ -218,15 +221,10 @@ install_hadoop() {
     local HADOOP_SOURCE="${MIRROR}/${HADOOP_FILENAME}"
     local HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
 
-    # asc file
-    local ASC_FILENAME="${HADOOP_FILENAME}.asc"
-    local ASC_SOURCE="${MIRROR}/${ASC_FILENAME}"
-    local ASC_DEST="${ARCHIVE_DIR}/${ASC_FILENAME}"
-
     log
     log "Installing Hadoop..." "${INDENT}"
     INDENT="    "
-    get_file "${HADOOP_DEST}" "${HADOOP_SOURCE}" "${ASC_DEST}" "${ASC_SRC}" "${INDENT}"
+    ensure_file "${HADOOP_DEST}" "${HADOOP_SOURCE}" "${INDENT}"
     # install from archive
     # configure properties
     # start hadoop
@@ -278,16 +276,23 @@ usage () {
     cat <<-EOF
   Usage:  ./install-accumulo.sh [options]
 
+  Description: Installs Hadoop, Zookeeper and Accumulo in one directory
+               and configures them for local development.  A log file is
+               stored in ${ARCHIVE_DIR}
+               if you want to review the install
+
   Options:
 
     -h                  display this message
     -f <config_file>    load configs from instead of prompting
+    -d, --directory     sets install directory, must not exist
 
 EOF
 }
 
 install () {
     green "The Accumulo Installer Script...."
+    log "Review this install at ${LOG_FILE}" "  "
     setup_configs
     install_hadoop
     install_zookeeper
@@ -302,6 +307,7 @@ while test $# -ne 0; do
         --no-run) NO_RUN=1; shift ;; # allows sourcing without a run
         -h) usage; exit 0 ;;
         -f) set_config_file $1; shift ;;
+        -d|--directory) INSTALL_DIR=$1; shift ;;
         *)
             usage
             abort "ERROR - unknown option : ${arg}"
