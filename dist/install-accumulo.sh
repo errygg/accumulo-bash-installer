@@ -3,7 +3,16 @@
 shopt -s compat31
 
 # include the other modules
-SCRIPT_DIR=$(dirname $0)
+script_dir() {
+    if [ -z "${SCRIPT_DIR}" ]; then
+    # even resolves symlinks, see
+    # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
+        local SOURCE="${BASH_SOURCE[0]}"
+        while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+        SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    fi
+    echo "${SCRIPT_DIR}"
+}
 # START utils.sh
 
 cleanup_from_abort() {
@@ -546,6 +555,8 @@ fi
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
 # built 12.03.27 15:55:45 by Michael Wall
 =======
 # built 12.03.27 13:33:47 by Michael Wall
@@ -556,3 +567,9 @@ fi
 =======
 # built 12.03.27 17:49:48 by Michael Wall
 >>>>>>> b86e42e... Reorg complete, for now
+=======
+# built 12.03.27 22:08:34 by Michael Wall
+>>>>>>> 1c53b47... Start refactoring test
+=======
+# built 12.03.27 22:09:38 by Michael Wall
+>>>>>>> 913a4d0... Finish reorg of code and tests.

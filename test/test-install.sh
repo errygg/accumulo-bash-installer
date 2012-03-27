@@ -39,12 +39,13 @@ test_install_dir_option_when_directory_does_not_exist() {
 # Testing the install function
 test_install_calls_setup_configs() {
     source "$CMD"
+    unset -f setup_configs
     local test_msg="setup_configs called"
     # replace setup_configs method
-    setup_configs() {
-        echo "${test_msg}"
+    eval "function setup_configs() {
+        echo \"${test_msg}\"
         exit 0;
-    }
+    }"
     local output=$(install)
     echo "OUTPUT: ${output}"
     assert_re_match "${output}" "${test_msg}"
