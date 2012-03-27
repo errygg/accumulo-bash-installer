@@ -82,14 +82,6 @@ read_input() {
 
 setup_configs () {
 
-    # ensure the archive directory exists
-    if [ -d "${ARCHIVE_DIR}" ]; then
-        yellow "Archive directory ${ARCHIVE_DIR} exists" "${INDENT}"
-    else
-        yellow "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
-        mkdir "${ARCHIVE_DIR}"
-    fi
-
     log
     local INDENT="  "
     yellow "Setting up configuration and checking requirements..." "${INDENT}"
@@ -489,6 +481,12 @@ install () {
     install_accumulo
     post_install
 }
+
+# make sure archive directory exists
+if [ ! -d "${ARCHIVE_DIR}" ]; then
+    echo "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
+    mkdir "${ARCHIVE_DIR}"
+fi
 
 # parse args here
 while test $# -ne 0; do
