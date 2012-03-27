@@ -2,83 +2,15 @@
 
 shopt -s compat31
 
+SCRIPT_DIR=$(dirname $0)
+
+source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/apache_downloader.sh"
+
 ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
 LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
 HADOOP_VERSION="0.20.2"
 HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
-
-cleanup_from_abort() {
-    if [ ! -z NO_RUN ]; then
-        # no need to cleanup, user specified --no-run
-        return
-    fi
-    # stop accumulo if running
-    # stop zookeeper if running
-    # stop hadoop if running
-    if [ -d "${HADOOP_HOME}" ]; then
-        red "Found hadoop, attempting to shutdown"
-        "${HADOOP_HOME}/bin/stop-all.sh"
-    fi
-    # remove install directory (May have to pass this in)
-    if [[ -d $INSTALL_DIR ]]; then
-        red "Removing ${INSTALL_DIR}"
-        rm -rf ${INSTALL_DIR}
-    fi
-    echo
-}
-
-log() {
-    local MESSAGE=$1
-    local INDENT=$2
-    echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
-    echo -e "${INDENT}${MESSAGE}"
-}
-
-color_log() {
-    # TODO: test on linux, works on Mac OSX
-    local COLOR=$1
-    local MESSAGE=$2
-    local INDENT=$3
-    echo -n -e "\033[0;${COLOR}m"
-    log "${MESSAGE}" "${INDENT}"
-    echo -n -e "\033[0m"
-}
-
-yellow() {
-    color_log "33" "$1" "$2"
-}
-
-red() {
-    color_log "31" "$1" "$2"
-}
-
-green() {
-    color_log "32" "$1" "$2"
-}
-
-blue() {
-    color_log "34" "$1" "$2"
-}
-
-abort() {
-    local MESSAGE=$1
-    local INDENT=$2
-    echo
-    red "${INDENT}Aborting..."
-    red "${INDENT}${MESSAGE}" 1>&2
-    cleanup_from_abort
-    exit 1
-}
-
-read_input() {
-    local PROMPT=$1
-    local INDENT=$2
-    if [[ ! -n $PROMPT ]]; then
-      abort "Script requested user input without a prompt message"
-    fi
-    read -p "${INDENT}${PROMPT}: " -e
-    echo "${REPLY}"
-}
 
 setup_configs () {
 
@@ -150,24 +82,6 @@ setup_configs () {
   # TODO: ask which version of accumulo.  Need a good way to manage
 }
 
-check_curl() {
-    if [ -z $CURL ]; then
-        which curl > /dev/null && CURL=1
-        if [ -z $CURL ]; then
-          abort "Could not find curl on your path"
-        fi
-    fi
-}
-
-check_gpg() {
-    if [ -z $GPG ]; then
-        which gpg > /dev/null && GPG=1
-        if [ -z $GPG ]; then
-            abort "Could not find gpg on your path"
-        fi
-    fi
-}
-
 verify_file() {
     local FILE=$1
     local SIG=$2
@@ -181,7 +95,7 @@ verify_file() {
         local cont=""
         while [ "$loop" -lt 1 ]; do
             cont=$(read_input "Do you want to continue anyway [y/n]" "${INDENT}")
-            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N"]; then
+            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N" ]; then
                 loop=1
             fi
         done

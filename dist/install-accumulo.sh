@@ -2,13 +2,12 @@
 
 shopt -s compat31
 
-ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
-LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
-HADOOP_VERSION="0.20.2"
-HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
+SCRIPT_DIR=$(dirname $0)
+
+# START utils.sh
 
 cleanup_from_abort() {
-    if [ ! -z NO_RUN ]; then
+    if [ ! -z $NO_RUN ]; then
         # no need to cleanup, user specified --no-run
         return
     fi
@@ -80,16 +79,40 @@ read_input() {
     echo "${REPLY}"
 }
 
+check_curl() {
+    if [ -z $CURL ]; then
+        which curl > /dev/null && CURL=1
+        if [ -z $CURL ]; then
+          abort "Could not find curl on your path"
+        fi
+    fi
+}
+
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> a9501cb... Dist command replacing files now
+check_gpg() {
+    if [ -z $GPG ]; then
+        which gpg > /dev/null && GPG=1
+        if [ -z $GPG ]; then
+            abort "Could not find gpg on your path"
+        fi
+    fi
+}
+
+# END utils.sh
+source "${SCRIPT_DIR}/apache_downloader.sh"
+
+ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
+LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
+HADOOP_VERSION="0.20.2"
+HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
+
 setup_configs () {
 
-    # ensure the archive directory exists
-    if [ -d "${ARCHIVE_DIR}" ]; then
-        yellow "Archive directory ${ARCHIVE_DIR} exists" "${INDENT}"
-    else
-        yellow "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
-        mkdir "${ARCHIVE_DIR}"
-    fi
-
+=======
+>>>>>>> a97c66c... Reorg folders
     log
     local INDENT="  "
     yellow "Setting up configuration and checking requirements..." "${INDENT}"
@@ -158,24 +181,6 @@ setup_configs () {
   # TODO: ask which version of accumulo.  Need a good way to manage
 }
 
-check_curl() {
-    if [ -z $CURL ]; then
-        which curl > /dev/null && CURL=1
-        if [ -z $CURL ]; then
-          abort "Could not find curl on your path"
-        fi
-    fi
-}
-
-check_gpg() {
-    if [ -z $GPG ]; then
-        which gpg > /dev/null && GPG=1
-        if [ -z $GPG ]; then
-            abort "Could not find gpg on your path"
-        fi
-    fi
-}
-
 verify_file() {
     local FILE=$1
     local SIG=$2
@@ -189,7 +194,7 @@ verify_file() {
         local cont=""
         while [ "$loop" -lt 1 ]; do
             cont=$(read_input "Do you want to continue anyway [y/n]" "${INDENT}")
-            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N"]; then
+            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N" ]; then
                 loop=1
             fi
         done
@@ -490,6 +495,12 @@ install () {
     post_install
 }
 
+# make sure archive directory exists
+if [ ! -d "${ARCHIVE_DIR}" ]; then
+    echo "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
+    mkdir "${ARCHIVE_DIR}"
+fi
+
 # parse args here
 while test $# -ne 0; do
     arg=$1; shift
@@ -513,4 +524,12 @@ else
     blue "INSTALL_DIR: ${INSTALL_DIR}"
     blue "CONFIG_FILE: ${CONFIG_FILE}"
 fi
-# built 12.03.26 17:49:18 by Michael Wall
+<<<<<<< HEAD
+<<<<<<< HEAD
+# built 12.03.27 15:55:45 by Michael Wall
+=======
+# built 12.03.27 13:33:47 by Michael Wall
+>>>>>>> a97c66c... Reorg folders
+=======
+# built 12.03.27 15:55:45 by Michael Wall
+>>>>>>> a9501cb... Dist command replacing files now
