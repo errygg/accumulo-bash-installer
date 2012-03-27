@@ -2,8 +2,8 @@
 
 shopt -s compat31
 
+# include the other modules
 SCRIPT_DIR=$(dirname $0)
-
 # START utils.sh
 
 cleanup_from_abort() {
@@ -102,17 +102,76 @@ check_gpg() {
 }
 
 # END utils.sh
-source "${SCRIPT_DIR}/apache_downloader.sh"
+# START apache_downloader.sh
 
-ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
-LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
-HADOOP_VERSION="0.20.2"
-HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
+verify_file() {
+    local FILE=$1
+    local SIG=$2
+    local INDENT=$3
+    yellow "Verifying the signature of ${FILE}" "${INDENT}"
+    gpg --verify "${SIG}" "${FILE}"
+    local verified=$?
+    if [ "$verified" -gt 0 ]; then
+        red "Verification failed" "${INDENT}"
+        local loop=0
+        local cont=""
+        while [ "$loop" -lt 1 ]; do
+            cont=$(read_input "Do you want to continue anyway [y/n]" "${INDENT}")
+            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N" ]; then
+                loop=1
+            fi
+        done
+        if [ "${cont}" == "y" ] || [ "${cont}" == "Y" ]; then
+            yellow "Ok, installing unverified file" "${INDENT}"
+        else
+            abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html" "${INDENT}"
+        fi
+    else
+        yellow "Verification passed" "${INDENT}"
+    fi
+}
 
-setup_configs () {
+download_file() {
+    local DEST=$1
+    local SRC=$2
+    local INDENT=$3
+    check_curl
+    # get the file
+    yellow "Downloading ${SRC} to ${DEST}" "${INDENT}"
+    yellow "Please wait..." "${INDENT}"
+    if curl -L "${SRC}" -o "${DEST}"; then
+        true
+    else
+        abort "Could not download ${SRC}"
+    fi
+}
 
+<<<<<<< HEAD
 =======
 >>>>>>> a97c66c... Reorg folders
+=======
+ensure_file() {
+    local FILE_DEST=$1
+    local FILE_SRC=$2
+    local INDENT=$3
+    if [ ! -e "${FILE_DEST}" ]; then
+        download_file "${FILE_DEST}" "${FILE_SRC}" "${INDENT}"
+        if [ ! -e "${FILE_DEST}.asc" ]; then
+            download_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" "${INDENT}"
+        fi
+        yellow "Verifying ${FILE_DEST}"
+        verify_file "${FILE_DEST}" "${FILE_DEST}.asc" "${INDENT}"
+    else
+        yellow "Using existing file ${FILE_DEST}" "${INDENT}"
+    fi
+
+}
+
+# END apache_downloader.sh
+# START pre_install.sh
+
+setup_configs () {
+>>>>>>> b86e42e... Reorg complete, for now
     log
     local INDENT="  "
     yellow "Setting up configuration and checking requirements..." "${INDENT}"
@@ -181,65 +240,8 @@ setup_configs () {
   # TODO: ask which version of accumulo.  Need a good way to manage
 }
 
-verify_file() {
-    local FILE=$1
-    local SIG=$2
-    local INDENT=$3
-    yellow "Verifying the signature of ${FILE}" "${INDENT}"
-    gpg --verify "${SIG}" "${FILE}"
-    local verified=$?
-    if [ "$verified" -gt 0 ]; then
-        red "Verification failed" "${INDENT}"
-        local loop=0
-        local cont=""
-        while [ "$loop" -lt 1 ]; do
-            cont=$(read_input "Do you want to continue anyway [y/n]" "${INDENT}")
-            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N" ]; then
-                loop=1
-            fi
-        done
-        if [ "${cont}" == "y" ] || [ "${cont}" == "Y" ]; then
-            yellow "Ok, installing unverified file" "${INDENT}"
-        else
-            abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html" "${INDENT}"
-        fi
-    else
-        yellow "Verification passed" "${INDENT}"
-    fi
-}
-
-download_file() {
-    local DEST=$1
-    local SRC=$2
-    local INDENT=$3
-    check_curl
-    # get the file
-    yellow "Downloading ${SRC} to ${DEST}" "${INDENT}"
-    yellow "Please wait..." "${INDENT}"
-    if curl -L "${SRC}" -o "${DEST}"; then
-        true
-    else
-        abort "Could not download ${SRC}"
-    fi
-}
-
-ensure_file() {
-    local FILE_DEST=$1
-    local FILE_SRC=$2
-    local INDENT=$3
-    if [ ! -e "${FILE_DEST}" ]; then
-        download_file "${FILE_DEST}" "${FILE_SRC}" "${INDENT}"
-        if [ ! -e "${FILE_DEST}.asc" ]; then
-            download_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" "${INDENT}"
-        fi
-        yellow "Verifying ${FILE_DEST}"
-        verify_file "${FILE_DEST}" "${FILE_DEST}.asc" "${INDENT}"
-    else
-        yellow "Using existing file ${FILE_DEST}" "${INDENT}"
-    fi
-
-}
-
+# END pre_install.sh
+# START hadoop.sh
 
 install_hadoop() {
     local INDENT="  "
@@ -421,6 +423,9 @@ EOF
     green "Hadoop is installed and running" "  "
 }
 
+# END hadoop.sh
+# START zookeeper.sh
+
 install_zookeeper() {
     log
     local INDENT="  "
@@ -432,6 +437,9 @@ install_zookeeper() {
     # start zookeeper
     # test installation
 }
+
+# END zookeeper.sh
+# START accumulo.sh
 
 install_accumulo() {
     log
@@ -445,6 +453,9 @@ install_accumulo() {
     # test installation
 }
 
+# END accumulo.sh
+# START post_install.sh
+
 post_install() {
     log
     local INDENT="  "
@@ -455,6 +466,14 @@ post_install() {
     # message about sourcing accumulo-env
     #cleanup_from_abort #TODO: remove once this script is working
 }
+
+# END post_install.sh
+
+# setup some variables
+ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
+LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
+HADOOP_VERSION="0.20.2"
+HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
 
 set_config_file () {
     test -f $1 || abort "invalid config file, '$1' does not exist"
@@ -526,6 +545,7 @@ else
 fi
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 # built 12.03.27 15:55:45 by Michael Wall
 =======
 # built 12.03.27 13:33:47 by Michael Wall
@@ -533,3 +553,6 @@ fi
 =======
 # built 12.03.27 15:55:45 by Michael Wall
 >>>>>>> a9501cb... Dist command replacing files now
+=======
+# built 12.03.27 17:49:48 by Michael Wall
+>>>>>>> b86e42e... Reorg complete, for now
