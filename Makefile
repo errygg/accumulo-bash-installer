@@ -8,7 +8,7 @@ USER=      $(shell git config user.name)
 DIST=      ${DIST_DIR}/${DIST_FILE}
 
 test :
-	./test/test-cli-options.sh
+	./test/test-install.sh
 
 clean :
 	rm -rf ${DIST_DIR}

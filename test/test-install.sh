@@ -2,6 +2,7 @@
 
 CMD="./bin/install.sh"
 
+# Testing the command line arguments
 test_help_option_prints_usage() {
     local output=$("${CMD}" -h)
     assert_re_match "${output}" "Usage: "
@@ -35,6 +36,22 @@ test_install_dir_option_when_directory_does_not_exist() {
     assert_re_match "${output}" "INSTALL_DIR: ${new_dir}"
 }
 
+# Testing the install function
+test_install_calls_setup_configs() {
+    source "$CMD"
+    local test_msg="setup_configs called"
+    # replace setup_configs method
+    setup_configs() {
+        echo "${test_msg}"
+        exit 0;
+    }
+    local output=$(install)
+    echo "OUTPUT: ${output}"
+    assert_re_match "${output}" "${test_msg}"
+}
+
+
+# HELPERS
 # assert re_pattern match the given text
 assert_re_match() {
     local text=$1
