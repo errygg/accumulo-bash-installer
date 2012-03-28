@@ -38,21 +38,36 @@ test_install_dir_option_when_directory_does_not_exist() {
 
 # Testing the install function
 test_install_calls_setup_configs() {
-    source "$CMD"
-    unset -f setup_configs
-    local test_msg="setup_configs called"
-    # replace setup_configs method
-    eval "function setup_configs() {
-        echo \"${test_msg}\"
-        exit 0;
-    }"
+    # setup
+    local msg="setup_configs called"
+    load_file
+    stub_setup_configs "${msg}"
+
+    # execute
     local output=$(install)
-    echo "OUTPUT: ${output}"
-    assert_re_match "${output}" "${test_msg}"
+
+    # assert
+    assert_re_match "${output}" "${msg}"
 }
 
 
 # HELPERS
+# load file so we can execute functions
+load_file() {
+    # use --no-run so it only loads and prints configs
+    # need to dump to /dev/null, or the output shows in the test
+    source "${CMD}" --no-run > /dev/null
+}
+
+# overwrite setup_configs, having it dump the msg arg
+stub_setup_configs() {
+    local msg=$1
+    eval "function setup_configs() {
+        echo \"${msg}\"
+        exit 0;
+    }"
+}
+
 # assert re_pattern match the given text
 assert_re_match() {
     local text=$1
