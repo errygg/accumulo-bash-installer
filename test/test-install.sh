@@ -41,7 +41,21 @@ test_install_calls_setup_configs() {
     # setup
     local msg="setup_configs called"
     load_file
-    stub_setup_configs "${msg}"
+    stub_function "setup_configs" "${msg}" 1
+
+    # execute
+    local output=$(install)
+
+    # assert
+    assert_re_match "${output}" "${msg}"
+}
+
+test_install_calls_install_hadoop() {
+    # setup
+    local msg="hadoop called"
+    load_file
+    stub_function "setup_configs"
+    stub_function "install_hadoop" "${msg}" 1
 
     # execute
     local output=$(install)
@@ -59,13 +73,23 @@ load_file() {
     source "${CMD}" --no-run > /dev/null
 }
 
-# overwrite setup_configs, having it dump the msg arg
-stub_setup_configs() {
-    local msg=$1
-    eval "function setup_configs() {
-        echo \"${msg}\"
-        exit 0;
-    }"
+# overwrite functions name in first arg, having it echo the second arg
+# so we can inspect the output.  If the third option is present, then the
+# stubbed function will exit
+stub_function() {
+    local fname=$1
+    local msg=$2
+    local exitnow=$3
+    if [ "x${exitnow}" != "x" ]; then
+        eval "function ${fname}() {
+            echo \"${msg}\"
+            exit 0;
+        }"
+    else
+        eval "function ${fname}() {
+             echo \"${msg}\"
+        }"
+    fi
 }
 
 # assert re_pattern match the given text
