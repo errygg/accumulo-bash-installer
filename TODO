@@ -1,9 +1,13 @@
+- Figure out testing and then test everything
 - Code zookeeper install
 - Code accumulo install
-- Split file into parts
-- Test each part
-- Makefile to test and assemble one script
 - Update readme
 - Test on linux
 - Catch CTRL-C and run abort
 - Update to hadoop 0.20.203?
+- Look into Travis CI
+
+From steve
+- make prompts green
+- ensure gpg is found
+- test for read/write on install directory and give a better message
