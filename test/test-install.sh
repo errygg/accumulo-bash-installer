@@ -64,6 +64,55 @@ test_install_calls_install_hadoop() {
     assert_re_match "${output}" "${msg}"
 }
 
+test_install_calls_install_zookeeper() {
+    # setup
+    local msg="zookeeper called"
+    load_file
+    stub_function "setup_configs"
+    stub_function "install_hadoop"
+    stub_function "install_zookeeper" "${msg}" 1
+
+    # execute
+    local output=$(install)
+
+    # assert
+    assert_re_match "${output}" "${msg}"
+}
+
+test_install_calls_install_accumulo() {
+    # setup
+    local msg="accumulo called"
+    load_file
+    stub_function "setup_configs"
+    stub_function "install_hadoop"
+    stub_function "install_zookeeper"
+    stub_function "install_accumulo" "${msg}" 1
+
+    # execute
+    local output=$(install)
+
+    # assert
+    assert_re_match "${output}" "${msg}"
+}
+
+test_install_calls_post_installo() {
+    # setup
+    local msg="post install called"
+    load_file
+    stub_function "setup_configs"
+    stub_function "install_hadoop"
+    stub_function "install_zookeeper"
+    stub_function "install_accumulo"
+    stub_function "post_install" "${msg}" 1
+
+    # execute
+    local output=$(install)
+
+    # assert
+    assert_re_match "${output}" "${msg}"
+}
+
+
 
 # HELPERS
 # load file so we can execute functions
