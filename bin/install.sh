@@ -3,7 +3,7 @@
 shopt -s compat31
 
 # include the other modules
-script_dir() {
+_script_dir() {
     if [ -z "${SCRIPT_DIR}" ]; then
     # even resolves symlinks, see
     # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
@@ -13,13 +13,13 @@ script_dir() {
     fi
     echo "${SCRIPT_DIR}"
 }
-source "$(script_dir)/utils.sh"
-source "$(script_dir)/apache_downloader.sh"
-source "$(script_dir)/pre_install.sh"
-source "$(script_dir)/hadoop.sh"
-source "$(script_dir)/zookeeper.sh"
-source "$(script_dir)/accumulo.sh"
-source "$(script_dir)/post_install.sh"
+source "$(_script_dir)/utils.sh"
+source "$(_script_dir)/apache_downloader.sh"
+source "$(_script_dir)/pre_install.sh"
+source "$(_script_dir)/hadoop.sh"
+source "$(_script_dir)/zookeeper.sh"
+source "$(_script_dir)/accumulo.sh"
+source "$(_script_dir)/post_install.sh"
 
 # setup some variables
 ARCHIVE_DIR="${HOME}/.accumulo-install-archive"

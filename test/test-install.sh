@@ -112,7 +112,16 @@ test_install_calls_post_installo() {
     assert_re_match "${output}" "${msg}"
 }
 
+test_script_when_archive_dir_exists() {
+    fail
+}
 
+test_script_when_archive_dir_does_not_exist() {
+    fail
+}
+
+# Not going to test the --no-run option, or the _script_dir function or the variables.
+# To fragile and not needed
 
 # HELPERS
 # load file so we can execute functions
