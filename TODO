@@ -6,6 +6,8 @@
 - Catch CTRL-C and run abort
 - Update to hadoop 0.20.203?
 - Look into Travis CI
+- Add VERSION to install and output it to the log
+- On script completion, move install log to INSTALL_DIR and give the user a message
 
 From steve
 - make prompts green
