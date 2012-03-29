@@ -112,9 +112,11 @@ test_install_calls_post_installo() {
     assert_re_match "${output}" "${msg}"
 }
 
+
+ARCHIVE_DIR="${HOME}/.accumulo-install-archive" #copied from file, is there a better way
+
 test_script_when_archive_dir_exists() {
     # setup
-    ARCHIVE_DIR="${HOME}/.accumulo-install-archive" #copied from file, is there a better way
     if [ ! -d "${ARCHIVE_DIR}" ]; then
         mkdir "${ARCHIVE_DIR}"
         REMOVE=true
@@ -124,9 +126,7 @@ test_script_when_archive_dir_exists() {
     local output=$("${CMD}"  --no-run 2>&1)
 
     # assert
-    if [[ "${output}" =~ "Creating archive dir ${ARCHIVE_DIR}" ]]; then
-        echo "Expected the archive dir not be created, it already existed"
-    fi
+    assert_no_re_match "${output}" "Creating archive dir ${ARCHIVE_DIR}"
 
     # cleanup
     if [ "${REMOVE}" == "true" ]; then
@@ -137,7 +137,6 @@ test_script_when_archive_dir_exists() {
 
 test_script_when_archive_dir_does_not_exist() {
     # setup
-    ARCHIVE_DIR="${HOME}/.accumulo-install-archive" #copied from file, is there a better way
     if [ -d "${ARCHIVE_DIR}" ]; then
         mv "${ARCHIVE_DIR}" "${ARCHIVE_DIR}-moved"
         MOVE=true
@@ -194,6 +193,18 @@ assert_re_match() {
     if [[ ! "${text}" =~ "${re_pattern}" ]]; then
         echo ""
         echo "Expected '${re_pattern}' to be in the following"
+        echo "${text}"
+        fail
+    fi
+}
+
+# assert re_pattern does not match given text
+assert_no_re_match() {
+    local text=$1
+    local re_pattern=$2
+    if [[ "${text}" =~ "${re_pattern}" ]]; then
+        echo ""
+        echo "Expected '${re_pattern}' to NOT be in the following"
         echo "${text}"
         fail
     fi
