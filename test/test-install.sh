@@ -113,11 +113,48 @@ test_install_calls_post_installo() {
 }
 
 test_script_when_archive_dir_exists() {
-    fail
+    # setup
+    ARCHIVE_DIR="${HOME}/.accumulo-install-archive" #copied from file, is there a better way
+    if [ ! -d "${ARCHIVE_DIR}" ]; then
+        mkdir "${ARCHIVE_DIR}"
+        REMOVE=true
+    fi
+
+    # execute
+    local output=$("${CMD}"  --no-run 2>&1)
+
+    # assert
+    if [[ "${output}" =~ "Creating archive dir ${ARCHIVE_DIR}" ]]; then
+        echo "Expected the archive dir not be created, it already existed"
+    fi
+
+    # cleanup
+    if [ "${REMOVE}" == "true" ]; then
+        rm -rf "${ARCHIVE_DIR}"
+        unset REMOVE
+    fi
 }
 
 test_script_when_archive_dir_does_not_exist() {
-    fail
+    # setup
+    ARCHIVE_DIR="${HOME}/.accumulo-install-archive" #copied from file, is there a better way
+    if [ -d "${ARCHIVE_DIR}" ]; then
+        mv "${ARCHIVE_DIR}" "${ARCHIVE_DIR}-moved"
+        MOVE=true
+    fi
+
+    # execute
+    local output=$("${CMD}"  --no-run 2>&1)
+
+    # assert
+    assert_re_match "${output}"  "Creating archive dir ${ARCHIVE_DIR}"
+
+    # cleanup
+    if [ "${MOVE}" == "true" ]; then
+        rm -rf "${ARCHIVE_DIR}"
+        mv "${ARCHIVE_DIR}-moved" "${ARCHIVE_DIR}"
+        unset MOVE
+    fi
 }
 
 # Not going to test the --no-run option, or the _script_dir function or the variables.
