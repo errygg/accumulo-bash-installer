@@ -37,11 +37,11 @@ test_option_install_dir_when_directory_does_not_exist() {
 }
 
 # Testing the install function
-test_install_calls_setup_configs() {
+test_install_calls_pre_install() {
     # setup
-    local msg="setup_configs called"
+    local msg="pre_install called"
     load_file
-    stub_function "setup_configs" "${msg}" 1
+    stub_function "pre_install" "${msg}" 1
 
     # execute
     local output=$(install)
@@ -54,7 +54,7 @@ test_install_calls_install_hadoop() {
     # setup
     local msg="hadoop called"
     load_file
-    stub_function "setup_configs"
+    stub_function "pre_install"
     stub_function "install_hadoop" "${msg}" 1
 
     # execute
@@ -68,7 +68,7 @@ test_install_calls_install_zookeeper() {
     # setup
     local msg="zookeeper called"
     load_file
-    stub_function "setup_configs"
+    stub_function "pre_install"
     stub_function "install_hadoop"
     stub_function "install_zookeeper" "${msg}" 1
 
@@ -83,7 +83,7 @@ test_install_calls_install_accumulo() {
     # setup
     local msg="accumulo called"
     load_file
-    stub_function "setup_configs"
+    stub_function "pre_install"
     stub_function "install_hadoop"
     stub_function "install_zookeeper"
     stub_function "install_accumulo" "${msg}" 1
@@ -99,7 +99,7 @@ test_install_calls_post_installo() {
     # setup
     local msg="post install called"
     load_file
-    stub_function "setup_configs"
+    stub_function "pre_install"
     stub_function "install_hadoop"
     stub_function "install_zookeeper"
     stub_function "install_accumulo"

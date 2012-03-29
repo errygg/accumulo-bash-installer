@@ -59,7 +59,7 @@ EOF
 install () {
     green "The Accumulo Installer Script...."
     yellow "Review this install at ${LOG_FILE}" "  "
-    setup_configs
+    pre_install
     install_hadoop
     install_zookeeper
     install_accumulo

@@ -1,6 +1,6 @@
 # START pre_install.sh
 
-setup_configs () {
+pre_install () {
     log
     local INDENT="  "
     yellow "Setting up configuration and checking requirements..." "${INDENT}"
