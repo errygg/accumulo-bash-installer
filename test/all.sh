@@ -10,6 +10,6 @@ run_tests() {
     ./"${SCRIPT_DIR}"/"${file}"
 }
 
-run_tests "test-install.sh"
-
+run_tests "test_install.sh"
+run_tests "test_pre_install.sh"
 
