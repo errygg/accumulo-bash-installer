@@ -112,6 +112,46 @@ test_check_os_passes_for_darwin() {
     assert_re_match "${output}" "You are installing to OS: ${os}"
 }
 
+test_check_config_file_uses_CONFIG_FILE() {
+    # setup
+    local TEST_VAR="mike is unit testing bash here"
+    CONFIG_FILE="/tmp/somefile"
+    touch $CONFIG_FILE && echo "CHECK_ME=\"${TEST_VAR}\"" > $CONFIG_FILE
+
+    # execute
+    local output=$(check_config_file)
+
+    # assert
+    assert_re_match "${output}" "Using $CONFIG_FILE."
+
+    # cleanup
+    rm $CONFIG_FILE
+}
+
+test_check_config_file_sources_CONFIG_FILE() {
+    # setup
+    local TEST_VAR="mike is still unit testing bash here"
+    CONFIG_FILE="/tmp/somefile"
+    touch $CONFIG_FILE && echo "CHECK_ME=\"${TEST_VAR}\"" > $CONFIG_FILE
+    # need to overwrite yellow again to grab CHECK_ME
+    eval "function yellow() {
+      echo $(env | grep CHECK_ME)
+    }"
+
+    # execute
+    local output=$(check_config_file)
+
+    # assert
+    assert_re_match "${output}" "${TEST_VAR}"
+
+    # cleanup
+    rm $CONFIG_FILE
+}
+
+test_check_config_file_shows_no_config_file_set() {
+    a=1
+}
+
 source_pre_install() {
     stub_utils
     # need to dump to /dev/null, or the output shows in the test

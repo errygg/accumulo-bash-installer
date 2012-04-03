@@ -21,6 +21,7 @@ check_config_file() {
     if [ -n "${CONFIG_FILE}" ]; then
         yellow "Using $CONFIG_FILE.  Here is the contents" "${INDENT}"
         cat $CONFIG_FILE
+        . $CONFIG_FILE
     else
         yellow  "No config file found, we will get them from you now" "${INDENT}"
     fi
