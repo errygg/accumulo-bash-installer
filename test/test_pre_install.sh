@@ -6,8 +6,7 @@ CMD="./bin/pre_install.sh"
 test_pre_install_calls_check_os() {
     # setup
     local msg="check_os called"
-    source_pre_install
-    stub_pre_install_functions && stub_external_functions
+    source_pre_install && stub_pre_install_functions
     stub_function "check_os" "${msg}" 1
 
     # execute
@@ -20,8 +19,7 @@ test_pre_install_calls_check_os() {
 test_pre_install_calls_check_config_file() {
     # setup
     local msg="check_config_file called"
-    source_pre_install
-    stub_pre_install_functions && stub_external_functions
+    source_pre_install && stub_pre_install_functions
     stub_function "check_config_file" "${msg}" 1
 
     # execute
@@ -35,7 +33,7 @@ test_pre_install_calls_set_install_dir() {
     # setup
     local msg="set_install_dir called"
     source_pre_install
-    stub_pre_install_functions && stub_external_functions
+    source_pre_install && stub_pre_install_functions
     stub_function "set_install_dir" "${msg}" 1
 
     # execute
@@ -48,8 +46,7 @@ test_pre_install_calls_set_install_dir() {
 test_pre_install_calls_set_hdfs_dir() {
     # setup
     local msg="set_hdfs_dir called"
-    source_pre_install
-    stub_pre_install_functions && stub_external_functions
+    source_pre_install && stub_pre_install_functions
     stub_function "set_hdfs_dir" "${msg}" 1
 
     # execute
@@ -62,8 +59,7 @@ test_pre_install_calls_set_hdfs_dir() {
 test_pre_install_calls_set_java_home() {
     # setup
     local msg="set_java_home called"
-    source_pre_install
-    stub_pre_install_functions && stub_external_functions
+    source_pre_install && stub_pre_install_functions
     stub_function "set_java_home" "${msg}" 1
 
     # execute
@@ -76,8 +72,7 @@ test_pre_install_calls_set_java_home() {
 test_pre_install_calls_check_ssh() {
     # setup
     local msg="check_ssh called"
-    source_pre_install
-    stub_pre_install_functions && stub_external_functions
+    source_pre_install && stub_pre_install_functions
     stub_function "check_ssh" "${msg}" 1
 
     # execute
@@ -87,10 +82,53 @@ test_pre_install_calls_check_ssh() {
     assert_re_match "${output}" "${msg}"
 }
 
+test_check_os_fails_for_cygwin() {
+    #setup
+    source_pre_install
+    local os="cygwin"
+    _uname() {
+        echo "${os}"
+    }
+
+    # execute
+    local output=$(check_os)
+
+    # assert
+    assert_re_match "${output}" "Installer does not support ${os}"
+}
+
+test_check_os_passes_for_darwin() {
+    #setup
+    source_pre_install
+    local os="Darwin"
+    _uname() {
+        echo "${os}"
+    }
+
+    # execute
+    local output=$(check_os)
+
+    # assert
+    assert_re_match "${output}" "You are installing to OS: ${os}"
+}
+
 source_pre_install() {
-    # use --no-run so it only loads and prints configs
+    stub_utils
     # need to dump to /dev/null, or the output shows in the test
     source "${CMD}" > /dev/null
+}
+
+stub_utils() {
+    # must escape $
+    eval "function log() {
+      echo \"\$@\"
+    }"
+    eval "function yellow() {
+      echo \"yellow - \$@\"
+    }"
+    eval "function abort() {
+      echo \"aborting - \$@\"
+    }"
 }
 
 stub_pre_install_functions() {
@@ -103,12 +141,6 @@ stub_pre_install_functions() {
     stub_function "set_java_home"
     stub_function "check_ssh"
 }
-
-stub_external_functions() {
-    stub_function "yellow"
-    stub_function "log"
-}
-
 
 # load helper and then shunit2
 . test/helper.sh && . test/lib/shunit2-2.1.6/src/shunit2

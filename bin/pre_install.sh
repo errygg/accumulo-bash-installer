@@ -1,9 +1,14 @@
 
 # START pre_install.sh
 
+_uname() {
+    # wrapper so I can replace in tests
+    echo "$(uname)"
+}
+
 check_os() {
   # check os
-    local PLATFORM=`uname`
+    local PLATFORM=`_uname`
     case $PLATFORM in
         "Darwin") yellow "You are installing to OS: ${PLATFORM}" "${INDENT}";;
         *)
