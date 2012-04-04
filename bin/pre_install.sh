@@ -47,11 +47,16 @@ set_install_dir() {
 }
 
 set_hdfs_dir() {
-      # assign HDFS_DIR
+    if [ "${INSTALL_DIR}x" == "x" ]; then
+        abort "INSTALL_DIR is not set"
+    fi
+    if [ ! -d "${INSTALL_DIR}" ]; then
+        abort "Install dir ${INSTALL_DIR} does not exist"
+    fi
+    # assign HDFS_DIR
     HDFS_DIR="${INSTALL_DIR}/hdfs"
     yellow "Making HDFS directory ${HDFS_DIR}" "${INDENT}"
-    mkdir -p "${HDFS_DIR}"
-
+    mkdir "${HDFS_DIR}"
 }
 
 set_java_home() {

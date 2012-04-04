@@ -138,7 +138,7 @@ test_check_config_file_sources_CONFIG_FILE() {
     touch $CONFIG_FILE && echo "CHECK_ME=\"${TEST_VAR}\"" > $CONFIG_FILE
     # need to overwrite yellow again to grab CHECK_ME
     eval "function yellow() {
-      echo $(env | grep CHECK_ME)
+      echo \$(env | grep CHECK_ME)
     }"
 
     # execute
@@ -233,7 +233,70 @@ test_set_install_dir_makes_INSTALL_DIR() {
     # cleanup
     rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
     unset INSTALL_DIR
-    a=1
+}
+
+test_set_hdfs_dir_fail_if_INSTALL_DIR_not_set() {
+    # setup
+    unset INSTALL_DIR
+
+    # execute
+    local output=$(set_hdfs_dir)
+
+    # assert
+    assert_re_match "${output}" "INSTALL_DIR is not set"
+}
+
+test_set_hdfs_dir_fails_if_INSTALL_DIR_does_not_exist() {
+    # setup
+    INSTALL_DIR=/tmp/inohere
+    rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
+
+    # execute
+    local output=$(set_hdfs_dir)
+
+    # assert
+    assert_re_match "${output}" "Install dir ${INSTALL_DIR} does not exist"
+}
+
+test_set_hdfs_dir_sets_HDFS_DIR() {
+    # setup
+    source_pre_install
+    INSTALL_DIR=/tmp/junk9
+    set_install_dir > /dev/null
+    eval "function yellow() {
+        echo \${HDFS_DIR}
+    }"
+
+    # execute
+    local output=$(set_hdfs_dir)
+
+    # assert
+    assertEquals "${output}" "${INSTALL_DIR}/hdfs"
+
+    # cleanup
+    rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
+    unset INSTALL_DIR
+}
+
+test_set_hdfs_dir_makes_HDFS_DIR() {
+    # setup
+    source_pre_install
+    INSTALL_DIR=/tmp/junk5
+    set_install_dir > /dev/null
+
+    # execute
+    local output=$(set_hdfs_dir)
+
+    # assert
+    assert_re_match "${output}" "Making HDFS directory ${INSTALL_DIR}/hdfs"
+    if [ ! -d "${INSTALL_DIR}/hdfs" ]; then
+        echo "HDFS directory not created"
+        fail
+    fi
+
+    # cleanup
+    rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
+    unset INSTALL_DIR
 }
 
 source_pre_install() {
@@ -252,6 +315,7 @@ stub_utils() {
     }"
     eval "function abort() {
       echo \"aborting - \$@\"
+      exit 0
     }"
 }
 
