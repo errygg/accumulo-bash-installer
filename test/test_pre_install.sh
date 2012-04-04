@@ -82,6 +82,8 @@ test_pre_install_calls_check_ssh() {
     assert_re_match "${output}" "${msg}"
 }
 
+# check_os tests
+
 test_check_os_fails_for_cygwin() {
     #setup
     source_pre_install
@@ -111,6 +113,8 @@ test_check_os_passes_for_darwin() {
     # assert
     assert_re_match "${output}" "You are installing to OS: ${os}"
 }
+
+# check_config_file tests
 
 test_check_config_file_uses_CONFIG_FILE() {
     # setup
@@ -162,6 +166,8 @@ test_check_config_file_shows_no_config_file_set() {
     # assert
     assert_re_match "${output}" "No config file found, we will get them from you now"
 }
+
+# set_install_dir tests
 
 test_set_install_dir_uses_INSTALL_DIR() {
     #setup
@@ -235,8 +241,11 @@ test_set_install_dir_makes_INSTALL_DIR() {
     unset INSTALL_DIR
 }
 
+# set_hdfs_dir tests
+
 test_set_hdfs_dir_fail_if_INSTALL_DIR_not_set() {
     # setup
+    source_pre_install
     unset INSTALL_DIR
 
     # execute
@@ -248,6 +257,7 @@ test_set_hdfs_dir_fail_if_INSTALL_DIR_not_set() {
 
 test_set_hdfs_dir_fails_if_INSTALL_DIR_does_not_exist() {
     # setup
+    source_pre_install
     INSTALL_DIR=/tmp/inohere
     rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
 
@@ -298,6 +308,82 @@ test_set_hdfs_dir_makes_HDFS_DIR() {
     rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
     unset INSTALL_DIR
 }
+
+# set_java_home tests
+
+test_set_java_home_with_JAVA_HOME_set_and_dir_exists() {
+    # setup
+    source_pre_install
+    local tmp_dir=/tmp/javahome1
+    mkdir -p "${tmp_dir}"
+    JAVA_HOME="${tmp_dir}"
+
+    # execute
+    local output=$(set_java_home)
+
+    # assert
+    assert_re_match "${output}" "JAVA_HOME set to ${JAVA_HOME}"
+
+    # cleanup
+    rm -rf ${tmp_dir}
+}
+
+test_set_java_home_with_JAVA_HOME_set_and_dir_does_not_exist() {
+    # setup
+    source_pre_install
+    local tmp_dir=/tmp/javahome1
+    JAVA_HOME="${tmp_dir}"
+
+    # execute
+    local output=$(set_java_home)
+
+    # assert
+    assert_re_match "${output}" "JAVA_HOME does not exist: ${JAVA_HOME}"
+
+    # cleanup
+    rm -rf ${tmp_dir}
+}
+
+test_set_java_home_reads_JAVA_HOME_when_dir_exists() {
+    # setup
+    source_pre_install
+    unset JAVA_HOME
+    local dir="/tmp/javajunk3"
+    eval "function read_input() {
+      echo ${dir}
+    }"
+    mkdir "${dir}"
+
+    # execute
+    local output=$(set_java_home)
+
+    # assert
+    assert_re_match "${output}" "JAVA_HOME set to ${dir}"
+
+    # cleanup
+    rm -rf "${dir}"
+}
+
+test_set_java_home_read_JAVA_HOME_when_dir_does_not_exist() {
+    # setup
+    source_pre_install
+    unset JAVA_HOME
+    local dir="/tmp/javajunk4"
+    eval "function read_input() {
+      echo ${dir}
+    }"
+
+    # execute
+    local output=$(set_java_home)
+
+    # assert
+    assert_re_match "${output}" "JAVA_HOME does not exist: ${dir}"
+}
+
+# check_ssh tests
+
+
+# helpers
 
 source_pre_install() {
     stub_utils
