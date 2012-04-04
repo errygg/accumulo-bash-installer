@@ -158,6 +158,28 @@ test_blue_calls_log_with_34() {
     assert_re_match "${output}" "${msg} - 34"
 }
 
+# abort test
+# test abort shows Aborting.... in red
+# test abort show message
+# test abort calls cleanup from abort
+# test abort exits 1
+
+# read_input test
+# test read_input without a prompt fails
+# test read_input uses the INDENT
+# test read_input grabs user input
+
+# check_curl
+
+# check_gpg
+
+# test cleanup_from_abort
+# should stop accumulo if running
+# should stop zookeeper if running
+# should stop hadoop if running
+# should remove install dir
+# should give note again about log file
+
 
 # load file so we can execute functions
 source_file() {
