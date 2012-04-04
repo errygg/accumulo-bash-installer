@@ -2,71 +2,81 @@
 
 log() {
     local MESSAGE=$1
-    local COLOR=$2
     if [ "${LOG_FILE}x" != "x" ] && [ -e "${LOG_FILE}" ]; then
         echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
     fi
-    if [ "${COLOR}x" == "x" ]; then
-        echo -e "${INDENT}${MESSAGE}"
-    else
-       # TODO: test on linux, works on Mac OSX
-        echo -n -e "\033[0;${COLOR}m"
-        echo -e  "${INDENT}${MESSAGE}"
-        echo -n -e "\033[0m"
-    fi
+    echo -e "${INDENT}${MESSAGE}"
 }
 
 yellow() {
-    log "$1" "33"
+   log "${_yellow}$1${_normal}"
 }
 
 red() {
-    log "$1" "31"
+   log "${_red}$1${_normal}"
 }
 
 green() {
-    log "$1" "32"
+   log "${_green}$1${_normal}"
 }
 
 blue() {
-    log "$1" "34"
+   log "${_blue}$1${_normal}"
 }
+
+light_blue() {
+   log "${_light_blue}$1${_normal}"
+}
+
+_blue=$(tput setaf 4)
+_green=$(tput setaf 2)
+_red=$(tput setaf 1)
+_yellow=$(tput setaf 3)
+_light_blue=$(tput setaf 6)
+_normal=$(tput sgr0)
 
 abort() {
     local MESSAGE=$1
-    local INDENT=$2
     echo
-    red "${INDENT}Aborting..."
-    red "${INDENT}${MESSAGE}" 1>&2
+    red "Aborting..." 1>&2
+    red "${MESSAGE}" 1>&2
     cleanup_from_abort
     exit 1
 }
 
 read_input() {
     local PROMPT=$1
-    local INDENT=$2
     if [[ ! -n $PROMPT ]]; then
       abort "Script requested user input without a prompt message"
     fi
-    read -p "${INDENT}${PROMPT}: " -e
-    echo "${REPLY}"
+    local IPROMPT="${INDENT}${PROMPT}"
+    read -p "${_yellow}${IPROMPT}:${_normal} " -e
+    local input="${REPLY}"
+    if [ "${LOG_FILE}x" != "x" ] && [ -e "${LOG_FILE}" ]; then
+        echo -e "${INDENT}${PROMPT}: ${input}" >> $LOG_FILE
+    fi
+    echo "${input}"
+}
+
+_which_curl() {
+    # pulled out to make it easier to test
+    which curl
+}
+
+_which_gpg() {
+    # pulled out to make it easier to test
+    which gpg
 }
 
 check_curl() {
     if [ -z $CURL ]; then
-        which curl > /dev/null && CURL=1
-        if [ -z $CURL ]; then
-          abort "Could not find curl on your path"
-        fi
+        CURL=$(_which_curl) || abort "Could not find curl on your path"
     fi
 }
 
 check_gpg() {
     if [ -z $GPG ]; then
-        which gpg > /dev/null && GPG=1
-        if [ -z $GPG ]; then
-            abort "Could not find gpg on your path"
-        fi
+        GPG=$(_which_gpg) || abort "Could not find gpg on your path"
     fi
 }
 
