@@ -114,6 +114,7 @@ test_check_os_passes_for_darwin() {
 
 test_check_config_file_uses_CONFIG_FILE() {
     # setup
+    source_pre_install
     local TEST_VAR="mike is unit testing bash here"
     CONFIG_FILE="/tmp/somefile"
     touch $CONFIG_FILE && echo "CHECK_ME=\"${TEST_VAR}\"" > $CONFIG_FILE
@@ -126,10 +127,12 @@ test_check_config_file_uses_CONFIG_FILE() {
 
     # cleanup
     rm $CONFIG_FILE
+    unset CONFIG_FILE
 }
 
 test_check_config_file_sources_CONFIG_FILE() {
     # setup
+    source_pre_install
     local TEST_VAR="mike is still unit testing bash here"
     CONFIG_FILE="/tmp/somefile"
     touch $CONFIG_FILE && echo "CHECK_ME=\"${TEST_VAR}\"" > $CONFIG_FILE
@@ -146,9 +149,90 @@ test_check_config_file_sources_CONFIG_FILE() {
 
     # cleanup
     rm $CONFIG_FILE
+    unset CONFIG_FILE
 }
 
 test_check_config_file_shows_no_config_file_set() {
+    # setup
+    source_pre_install
+
+    # execute
+    local output=$(check_config_file)
+
+    # assert
+    assert_re_match "${output}" "No config file found, we will get them from you now"
+}
+
+test_set_install_dir_uses_INSTALL_DIR() {
+    #setup
+    source_pre_install
+    local dir=/tmp/junk1
+    INSTALL_DIR="${dir}"
+
+    # execute
+    local output=$(set_install_dir)
+
+    # assert
+    assert_re_match "${output}" "Install directory already set to ${dir}"
+
+    # cleanup
+    rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
+    unset INSTALL_DIR
+}
+
+test_set_install_dir_prompts_if_INSTALL_DIR_empty() {
+    #setup
+    source_pre_install
+    local dir="/tmp/junk3"
+    eval "function read_input() {
+      echo ${dir}
+    }"
+
+    # execute
+    local output=$(set_install_dir)
+
+    # assert
+    assert_re_match "${output}" "Creating directory ${dir}"
+
+    # cleanup
+    rm -rf "${dir}" 2>&1 > /dev/null
+    unset INSTALL_DIR
+}
+
+test_set_install_dir_aborts_if_INSTALL_DIR_exists() {
+    #setup
+    source_pre_install
+    local dir=/tmp/junk2
+    INSTALL_DIR="${dir}"
+    mkdir "${dir}"
+
+    # execute
+    local output=$(set_install_dir)
+
+    # assert
+    assert_re_match "${output}" "Directory '${dir}' already exists. You must install to a new directory."
+
+    # cleanup
+    rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
+    unset INSTALL_DIR
+}
+
+test_set_install_dir_makes_INSTALL_DIR() {
+    #setup
+    source_pre_install
+    local dir=/tmp/junk8
+    INSTALL_DIR="${dir}"
+
+    # execute
+    local output=$(set_install_dir)
+
+    # assert
+    assert_re_match "${output}" "Creating directory ${dir}"
+    assert_re_match "$(ls -d /tmp/*)" "${INSTALL_DIR}"
+
+    # cleanup
+    rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
+    unset INSTALL_DIR
     a=1
 }
 

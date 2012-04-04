@@ -30,8 +30,7 @@ check_config_file() {
 set_install_dir() {
   # get install directory
     if [ -n "${INSTALL_DIR}" ]; then
-    #TODO test this with configs and options
-        yellow "Install directory set to ${INSTALL_DIR} by command line option" "${INDENT}"
+        yellow "Install directory already set to ${INSTALL_DIR}" "${INDENT}"
     else
         while [ "${INSTALL_DIR}x" == "x" ]; do
             INSTALL_DIR=$(read_input "Enter install directory" "${INDENT}")
