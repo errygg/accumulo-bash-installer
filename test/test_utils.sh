@@ -80,6 +80,85 @@ test_log_uses_INDENT() {
     unset INDENT
 }
 
+test_log_handles_color() {
+    # setup
+    source_file
+    local color="31"
+    local msg="Am I pretty?"
+
+    # execute
+    local output=$(log "${msg}" "${color}")
+
+    # assert
+    # TODO: figure out how to actually test this
+    assert_re_match "${output}" "${msg}"
+}
+
+# yellow test
+test_yellow_calls_log_with_33() {
+    # setup
+    source_file
+    eval "function log() {
+        echo \"\$1 - \$2\"
+    }"
+    local msg="dont be scared"
+
+    # execute
+    local output=$(yellow "${msg}")
+
+    # assert
+    assert_re_match "${output}" "${msg} - 33"
+}
+
+# red test
+test_red_calls_log_with_31() {
+    # setup
+    source_file
+    eval "function log() {
+        echo \"\$1 - \$2\"
+    }"
+    local msg="why you so mad"
+
+    # execute
+    local output=$(red "${msg}")
+
+    # assert
+    assert_re_match "${output}" "${msg} - 31"
+}
+
+# green test
+test_green_calls_log_with_32() {
+    # setup
+    source_file
+    eval "function log() {
+        echo \"\$1 - \$2\"
+    }"
+    local msg="I am envious of you bash"
+
+    # execute
+    local output=$(green "${msg}")
+
+    # assert
+    assert_re_match "${output}" "${msg} - 32"
+}
+
+# blue test
+test_blue_calls_log_with_34() {
+    # setup
+    source_file
+    eval "function log() {
+        echo \"\$1 - \$2\"
+    }"
+    local msg="are you cold"
+
+    # execute
+    local output=$(blue "${msg}")
+
+    # assert
+    assert_re_match "${output}" "${msg} - 34"
+}
+
+
 # load file so we can execute functions
 source_file() {
     # need to dump to /dev/null, or the output shows in the test

@@ -2,36 +2,34 @@
 
 log() {
     local MESSAGE=$1
+    local COLOR=$2
     if [ "${LOG_FILE}x" != "x" ] && [ -e "${LOG_FILE}" ]; then
         echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
     fi
-    echo -e "${INDENT}${MESSAGE}"
-}
-
-color_log() {
-    # TODO: test on linux, works on Mac OSX
-    local COLOR=$1
-    local MESSAGE=$2
-    local INDENT=$3
-    echo -n -e "\033[0;${COLOR}m"
-    log "${MESSAGE}" "${INDENT}"
-    echo -n -e "\033[0m"
+    if [ "${COLOR}x" == "x" ]; then
+        echo -e "${INDENT}${MESSAGE}"
+    else
+       # TODO: test on linux, works on Mac OSX
+        echo -n -e "\033[0;${COLOR}m"
+        echo -e  "${INDENT}${MESSAGE}"
+        echo -n -e "\033[0m"
+    fi
 }
 
 yellow() {
-    color_log "33" "$1" "$2"
+    log "$1" "33"
 }
 
 red() {
-    color_log "31" "$1" "$2"
+    log "$1" "31"
 }
 
 green() {
-    color_log "32" "$1" "$2"
+    log "$1" "32"
 }
 
 blue() {
-    color_log "34" "$1" "$2"
+    log "$1" "34"
 }
 
 abort() {
