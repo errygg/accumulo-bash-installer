@@ -1,29 +1,10 @@
 # START utils.sh
 
-cleanup_from_abort() {
-    if [ ! -z $NO_RUN ]; then
-        # no need to cleanup, user specified --no-run
-        return
-    fi
-    # stop accumulo if running
-    # stop zookeeper if running
-    # stop hadoop if running
-    if [ -d "${HADOOP_HOME}" ]; then
-        red "Found hadoop, attempting to shutdown"
-        "${HADOOP_HOME}/bin/stop-all.sh"
-    fi
-    # remove install directory (May have to pass this in)
-    if [[ -d $INSTALL_DIR ]]; then
-        red "Removing ${INSTALL_DIR}"
-        rm -rf ${INSTALL_DIR}
-    fi
-    echo
-}
-
 log() {
     local MESSAGE=$1
-    local INDENT=$2
-    echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
+    if [ "${LOG_FILE}x" != "x" ] && [ -e "${LOG_FILE}" ]; then
+        echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
+    fi
     echo -e "${INDENT}${MESSAGE}"
 }
 
@@ -89,6 +70,26 @@ check_gpg() {
             abort "Could not find gpg on your path"
         fi
     fi
+}
+
+cleanup_from_abort() {
+    if [ ! -z $NO_RUN ]; then
+        # no need to cleanup, user specified --no-run
+        return
+    fi
+    # stop accumulo if running
+    # stop zookeeper if running
+    # stop hadoop if running
+    if [ -d "${HADOOP_HOME}" ]; then
+        red "Found hadoop, attempting to shutdown"
+        "${HADOOP_HOME}/bin/stop-all.sh"
+    fi
+    # remove install directory (May have to pass this in)
+    if [[ -d $INSTALL_DIR ]]; then
+        red "Removing ${INSTALL_DIR}"
+        rm -rf ${INSTALL_DIR}
+    fi
+    echo
 }
 
 # END utils.sh
