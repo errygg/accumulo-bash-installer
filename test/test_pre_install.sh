@@ -382,6 +382,39 @@ test_set_java_home_read_JAVA_HOME_when_dir_does_not_exist() {
 
 # check_ssh tests
 
+test_check_ssh_when_it_fails() {
+    # setup
+    source_pre_install
+    local fake_host="Cryme a river boys"
+    eval "function _hostname() {
+        echo ${fake_host}
+    }"
+
+    # execute
+    local output=$(check_ssh)
+
+    # assert
+    assert_re_match "${output}" "Problem with SSH, expected $fake_host, but got"
+}
+
+test_check_ssh_when_it_passes() {
+    # setup
+    source_pre_install
+    local fake_host="host1"
+    eval "function _hostname() {
+        echo ${fake_host}
+    }"
+    eval "function _ssh() {
+        echo ${fake_host}
+    }"
+
+    # execute
+    local output=$(check_ssh)
+
+    # assert
+    assert_re_match "${output}" "SSH appears good"
+}
+
 
 # helpers
 

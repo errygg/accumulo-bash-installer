@@ -73,11 +73,23 @@ set_java_home() {
     fi
 }
 
+_hostname() {
+    # wrapper so it can easily be replaced in testing
+    echo $(hostname)
+}
+
+_ssh() {
+    # wrapper so it can easily be replaced in testing
+    # this function sets publickey as the only authentication, which is
+    # the passwordless way Hadoop communicates in psuedo distributed mode
+    echo $(ssh -o 'PreferredAuthentications=publickey' localhost "hostname")
+}
+
 check_ssh() {
   # check ssh localhost
     yellow "Checking passwordless SSH (for Hadoop)" "${INDENT}"
-    local HOSTNAME=$(hostname)
-    local SSH_HOST=$(ssh -o 'PreferredAuthentications=publickey' localhost "hostname")
+    local HOSTNAME=$(_hostname)
+    local SSH_HOST=$(_ssh)
     if [[ "${HOSTNAME}" == "${SSH_HOST}" ]]; then
         yellow "SSH appears good" "${INDENT}"
     else

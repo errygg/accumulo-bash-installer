@@ -20,6 +20,6 @@ run_tests() {
     "$(_script_dir)/${file}"
 }
 
-#run_tests "test_install.sh"
+run_tests "test_install.sh"
 run_tests "test_pre_install.sh"
 
