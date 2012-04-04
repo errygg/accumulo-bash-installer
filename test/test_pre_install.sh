@@ -29,12 +29,12 @@ test_pre_install_calls_check_config_file() {
     assert_re_match "${output}" "${msg}"
 }
 
-test_pre_install_calls_set_install_dir() {
+test_pre_install_calls_get_install_dir() {
     # setup
-    local msg="set_install_dir called"
+    local msg="get_install_dir called"
     source_pre_install
     source_pre_install && stub_pre_install_functions
-    stub_function "set_install_dir" "${msg}" 1
+    stub_function "get_install_dir" "${msg}" 1
 
     # execute
     local output=$(pre_install)
@@ -43,11 +43,11 @@ test_pre_install_calls_set_install_dir() {
     assert_re_match "${output}" "${msg}"
 }
 
-test_pre_install_calls_set_hdfs_dir() {
+test_pre_install_calls_get_hdfs_dir() {
     # setup
-    local msg="set_hdfs_dir called"
+    local msg="get_hdfs_dir called"
     source_pre_install && stub_pre_install_functions
-    stub_function "set_hdfs_dir" "${msg}" 1
+    stub_function "get_hdfs_dir" "${msg}" 1
 
     # execute
     local output=$(pre_install)
@@ -58,9 +58,9 @@ test_pre_install_calls_set_hdfs_dir() {
 
 test_pre_install_calls_set_java_home() {
     # setup
-    local msg="set_java_home called"
+    local msg="get_java_home called"
     source_pre_install && stub_pre_install_functions
-    stub_function "set_java_home" "${msg}" 1
+    stub_function "get_java_home" "${msg}" 1
 
     # execute
     local output=$(pre_install)
@@ -167,16 +167,16 @@ test_check_config_file_shows_no_config_file_set() {
     assert_re_match "${output}" "No config file found, we will get them from you now"
 }
 
-# set_install_dir tests
+# get_install_dir tests
 
-test_set_install_dir_uses_INSTALL_DIR() {
+test_get_install_dir_uses_INSTALL_DIR() {
     #setup
     source_pre_install
     local dir=/tmp/junk1
     INSTALL_DIR="${dir}"
 
     # execute
-    local output=$(set_install_dir)
+    local output=$(get_install_dir)
 
     # assert
     assert_re_match "${output}" "Install directory already set to ${dir}"
@@ -186,7 +186,7 @@ test_set_install_dir_uses_INSTALL_DIR() {
     unset INSTALL_DIR
 }
 
-test_set_install_dir_prompts_if_INSTALL_DIR_empty() {
+test_get_install_dir_prompts_if_INSTALL_DIR_empty() {
     #setup
     source_pre_install
     local dir="/tmp/junk3"
@@ -195,7 +195,7 @@ test_set_install_dir_prompts_if_INSTALL_DIR_empty() {
     }"
 
     # execute
-    local output=$(set_install_dir)
+    local output=$(get_install_dir)
 
     # assert
     assert_re_match "${output}" "Creating directory ${dir}"
@@ -205,7 +205,7 @@ test_set_install_dir_prompts_if_INSTALL_DIR_empty() {
     unset INSTALL_DIR
 }
 
-test_set_install_dir_aborts_if_INSTALL_DIR_exists() {
+test_get_install_dir_aborts_if_INSTALL_DIR_exists() {
     #setup
     source_pre_install
     local dir=/tmp/junk2
@@ -213,7 +213,7 @@ test_set_install_dir_aborts_if_INSTALL_DIR_exists() {
     mkdir "${dir}"
 
     # execute
-    local output=$(set_install_dir)
+    local output=$(get_install_dir)
 
     # assert
     assert_re_match "${output}" "Directory '${dir}' already exists. You must install to a new directory."
@@ -223,14 +223,14 @@ test_set_install_dir_aborts_if_INSTALL_DIR_exists() {
     unset INSTALL_DIR
 }
 
-test_set_install_dir_makes_INSTALL_DIR() {
+test_get_install_dir_makes_INSTALL_DIR() {
     #setup
     source_pre_install
     local dir=/tmp/junk8
     INSTALL_DIR="${dir}"
 
     # execute
-    local output=$(set_install_dir)
+    local output=$(get_install_dir)
 
     # assert
     assert_re_match "${output}" "Creating directory ${dir}"
@@ -241,44 +241,44 @@ test_set_install_dir_makes_INSTALL_DIR() {
     unset INSTALL_DIR
 }
 
-# set_hdfs_dir tests
+# get_hdfs_dir tests
 
-test_set_hdfs_dir_fail_if_INSTALL_DIR_not_set() {
+test_get_hdfs_dir_fail_if_INSTALL_DIR_not_set() {
     # setup
     source_pre_install
     unset INSTALL_DIR
 
     # execute
-    local output=$(set_hdfs_dir)
+    local output=$(get_hdfs_dir)
 
     # assert
     assert_re_match "${output}" "INSTALL_DIR is not set"
 }
 
-test_set_hdfs_dir_fails_if_INSTALL_DIR_does_not_exist() {
+test_get_hdfs_dir_fails_if_INSTALL_DIR_does_not_exist() {
     # setup
     source_pre_install
     INSTALL_DIR=/tmp/inohere
     rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
 
     # execute
-    local output=$(set_hdfs_dir)
+    local output=$(get_hdfs_dir)
 
     # assert
     assert_re_match "${output}" "Install dir ${INSTALL_DIR} does not exist"
 }
 
-test_set_hdfs_dir_sets_HDFS_DIR() {
+test_get_hdfs_dir_sets_HDFS_DIR() {
     # setup
     source_pre_install
     INSTALL_DIR=/tmp/junk9
-    set_install_dir > /dev/null
-    eval "function yellow() {
+    get_install_dir > /dev/null
+    eval "function light_blue() {
         echo \${HDFS_DIR}
     }"
 
     # execute
-    local output=$(set_hdfs_dir)
+    local output=$(get_hdfs_dir)
 
     # assert
     assertEquals "${output}" "${INSTALL_DIR}/hdfs"
@@ -288,14 +288,14 @@ test_set_hdfs_dir_sets_HDFS_DIR() {
     unset INSTALL_DIR
 }
 
-test_set_hdfs_dir_makes_HDFS_DIR() {
+test_get_hdfs_dir_makes_HDFS_DIR() {
     # setup
     source_pre_install
     INSTALL_DIR=/tmp/junk5
-    set_install_dir > /dev/null
+    get_install_dir > /dev/null
 
     # execute
-    local output=$(set_hdfs_dir)
+    local output=$(get_hdfs_dir)
 
     # assert
     assert_re_match "${output}" "Making HDFS directory ${INSTALL_DIR}/hdfs"
@@ -309,9 +309,9 @@ test_set_hdfs_dir_makes_HDFS_DIR() {
     unset INSTALL_DIR
 }
 
-# set_java_home tests
+# get_java_home tests
 
-test_set_java_home_with_JAVA_HOME_set_and_dir_exists() {
+test_get_java_home_with_JAVA_HOME_set_and_dir_exists() {
     # setup
     source_pre_install
     local tmp_dir=/tmp/javahome1
@@ -319,7 +319,7 @@ test_set_java_home_with_JAVA_HOME_set_and_dir_exists() {
     JAVA_HOME="${tmp_dir}"
 
     # execute
-    local output=$(set_java_home)
+    local output=$(get_java_home)
 
     # assert
     assert_re_match "${output}" "JAVA_HOME set to ${JAVA_HOME}"
@@ -328,14 +328,14 @@ test_set_java_home_with_JAVA_HOME_set_and_dir_exists() {
     rm -rf ${tmp_dir}
 }
 
-test_set_java_home_with_JAVA_HOME_set_and_dir_does_not_exist() {
+test_get_java_home_with_JAVA_HOME_set_and_dir_does_not_exist() {
     # setup
     source_pre_install
     local tmp_dir=/tmp/javahome1
     JAVA_HOME="${tmp_dir}"
 
     # execute
-    local output=$(set_java_home)
+    local output=$(get_java_home)
 
     # assert
     assert_re_match "${output}" "JAVA_HOME does not exist: ${JAVA_HOME}"
@@ -344,7 +344,7 @@ test_set_java_home_with_JAVA_HOME_set_and_dir_does_not_exist() {
     rm -rf ${tmp_dir}
 }
 
-test_set_java_home_reads_JAVA_HOME_when_dir_exists() {
+test_get_java_home_reads_JAVA_HOME_when_dir_exists() {
     # setup
     source_pre_install
     unset JAVA_HOME
@@ -355,7 +355,7 @@ test_set_java_home_reads_JAVA_HOME_when_dir_exists() {
     mkdir "${dir}"
 
     # execute
-    local output=$(set_java_home)
+    local output=$(get_java_home)
 
     # assert
     assert_re_match "${output}" "JAVA_HOME set to ${dir}"
@@ -364,7 +364,7 @@ test_set_java_home_reads_JAVA_HOME_when_dir_exists() {
     rm -rf "${dir}"
 }
 
-test_set_java_home_read_JAVA_HOME_when_dir_does_not_exist() {
+test_get_java_home_read_JAVA_HOME_when_dir_does_not_exist() {
     # setup
     source_pre_install
     unset JAVA_HOME
@@ -374,7 +374,7 @@ test_set_java_home_read_JAVA_HOME_when_dir_does_not_exist() {
     }"
 
     # execute
-    local output=$(set_java_home)
+    local output=$(get_java_home)
 
     # assert
     assert_re_match "${output}" "JAVA_HOME does not exist: ${dir}"
@@ -432,6 +432,9 @@ stub_utils() {
     eval "function yellow() {
       echo \"yellow - \$@\"
     }"
+    eval "function light_blue() {
+      echo \"light_blue - \$@\"
+    }"
     eval "function abort() {
       echo \"aborting - \$@\"
       exit 0
@@ -443,9 +446,9 @@ stub_pre_install_functions() {
     # the method
     stub_function "check_os"
     stub_function "check_config_file"
-    stub_function "set_install_dir"
-    stub_function "set_hdfs_dir"
-    stub_function "set_java_home"
+    stub_function "get_install_dir"
+    stub_function "get_hdfs_dir"
+    stub_function "get_java_home"
     stub_function "check_ssh"
 }
 

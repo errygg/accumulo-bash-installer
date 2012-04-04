@@ -10,43 +10,43 @@ check_os() {
   # check os
     local PLATFORM=`_uname`
     case $PLATFORM in
-        "Darwin") yellow "You are installing to OS: ${PLATFORM}" "${INDENT}";;
+        "Darwin") light_blue "You are installing to OS: ${PLATFORM}" ;;
         *)
-            abort "Installer does not support ${PLATFORM}" "${INDENT}"
+            abort "Installer does not support ${PLATFORM}"
     esac
 }
 
 check_config_file() {
     # check for a config file
-    if [ -n "${CONFIG_FILE}" ]; then
-        yellow "Using $CONFIG_FILE.  Here is the contents" "${INDENT}"
-        cat $CONFIG_FILE
-        . $CONFIG_FILE
+    if [ -z $CONFIG_FILE ]; then
+        light_blue  "No config file found, we will get them from you now"
     else
-        yellow  "No config file found, we will get them from you now" "${INDENT}"
+        light_blue "Using $CONFIG_FILE.  Here is the contents"
+        cat "${CONFIG_FILE}"
+        source "${CONFIG_FILE}"
     fi
 }
 
-set_install_dir() {
+get_install_dir() {
   # get install directory
-    if [ -n "${INSTALL_DIR}" ]; then
-        yellow "Install directory already set to ${INSTALL_DIR}" "${INDENT}"
-    else
+    if [ -z $INSTALL_DIR ]; then
         while [ "${INSTALL_DIR}x" == "x" ]; do
-            INSTALL_DIR=$(read_input "Enter install directory" "${INDENT}")
+            INSTALL_DIR=$(read_input "Enter install directory")
         done
+    else
+        light_blue "Install directory already set to ${INSTALL_DIR}"
     fi
 
   # check install direcotry
     if [ -d $INSTALL_DIR ]; then
-        abort "Directory '${INSTALL_DIR}' already exists. You must install to a new directory." "${INDENT}"
+        abort "Directory '${INSTALL_DIR}' already exists. You must install to a new directory."
     else
-        yellow "Creating directory ${INSTALL_DIR}" "${INDENT}"
+        light_blue "Creating directory ${INSTALL_DIR}"
         mkdir -p "${INSTALL_DIR}"
     fi
 }
 
-set_hdfs_dir() {
+get_hdfs_dir() {
     if [ "${INSTALL_DIR}x" == "x" ]; then
         abort "INSTALL_DIR is not set"
     fi
@@ -55,21 +55,21 @@ set_hdfs_dir() {
     fi
     # assign HDFS_DIR
     HDFS_DIR="${INSTALL_DIR}/hdfs"
-    yellow "Making HDFS directory ${HDFS_DIR}" "${INDENT}"
+    light_blue "Making HDFS directory ${HDFS_DIR}"
     mkdir "${HDFS_DIR}"
 }
 
-set_java_home() {
+get_java_home() {
   # get java_home
-    if [ ! -n "${JAVA_HOME}" ]; then
-        JAVA_HOME=$(read_input "Enter JAVA_HOME location" "${INDENT}")
+    if [ -z $JAVA_HOME ]; then
+        JAVA_HOME=$(read_input "Enter JAVA_HOME location")
     fi
 
   # check java_home
     if [ ! -d $JAVA_HOME ]; then
-        abort "JAVA_HOME does not exist: ${JAVA_HOME}" "${INDENT}"
+        abort "JAVA_HOME does not exist: ${JAVA_HOME}"
     else
-        yellow "JAVA_HOME set to ${JAVA_HOME}" "${INDENT}"
+        light_blue "JAVA_HOME set to ${JAVA_HOME}"
     fi
 }
 
@@ -87,27 +87,27 @@ _ssh() {
 
 check_ssh() {
   # check ssh localhost
-    yellow "Checking passwordless SSH (for Hadoop)" "${INDENT}"
+    light_blue "Checking passwordless SSH (for Hadoop)"
     local HOSTNAME=$(_hostname)
     local SSH_HOST=$(_ssh)
     if [[ "${HOSTNAME}" == "${SSH_HOST}" ]]; then
-        yellow "SSH appears good" "${INDENT}"
+        light_blue "SSH appears good"
     else
-        abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless" "${INDENT}"
+        abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless"
     fi
 }
 
 pre_install () {
     log
-    local INDENT="  "
-    yellow "Setting up configuration and checking requirements..." "${INDENT}"
+    INDENT="  "
+    light_blue "Setting up configuration and checking requirements..."
     INDENT="    "
 
     check_os
     check_config_file
-    set_install_dir
-    set_hdfs_dir
-    set_java_home
+    get_install_dir
+    get_hdfs_dir
+    get_java_home
     check_ssh
   # TODO: ask which version of accumulo.  Need a good way to manage
 }

@@ -2,6 +2,8 @@
 
 # just a simple file to aggregate all tests.  Tests should be run from the project root so it can find the directories correctly, i.e ./test/all.sh.  If you want to run a subset or tests, comment them out below
 
+shopt -s compat31
+
 # copy of this function from install.sh
 _script_dir() {
     if [ -z "${SCRIPT_DIR}" ]; then
@@ -20,6 +22,6 @@ run_tests() {
     "$(_script_dir)/${file}"
 }
 
-#run_tests "test_install.sh"
-#run_tests "test_pre_install.sh"
+run_tests "test_install.sh"
+run_tests "test_pre_install.sh"
 run_tests "test_utils.sh"

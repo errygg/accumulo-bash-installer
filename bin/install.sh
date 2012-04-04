@@ -27,7 +27,7 @@ LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
 HADOOP_VERSION="0.20.2"
 HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
 
-set_config_file () {
+set_config_file() {
     test -f $1 || abort "invalid config file, '$1' does not exist"
     CONFIG_FILE=$1
 }
@@ -58,7 +58,9 @@ EOF
 
 install () {
     green "The Accumulo Installer Script...."
-    yellow "Review this install at ${LOG_FILE}" "  "
+    INDENT="  "
+    # TODO: remove from here and put in abort or post_install
+    light_blue "Review this install at ${LOG_FILE}"
     pre_install
     install_hadoop
     install_zookeeper
@@ -68,7 +70,7 @@ install () {
 
 # make sure archive directory exists
 if [ ! -d "${ARCHIVE_DIR}" ]; then
-    echo "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
+    echo "Creating archive dir ${ARCHIVE_DIR}"
     mkdir "${ARCHIVE_DIR}"
 fi
 
