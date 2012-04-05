@@ -38,7 +38,7 @@ get_install_dir() {
     fi
 
   # check install direcotry
-    if [ -d $INSTALL_DIR ]; then
+    if [ -d "$INSTALL_DIR" ]; then
         abort "Directory '${INSTALL_DIR}' already exists. You must install to a new directory."
     else
         light_blue "Creating directory ${INSTALL_DIR}"
@@ -50,7 +50,7 @@ get_hdfs_dir() {
     if [ "${INSTALL_DIR}x" == "x" ]; then
         abort "INSTALL_DIR is not set"
     fi
-    if [ ! -d "${INSTALL_DIR}" ]; then
+    if [ ! -d "$INSTALL_DIR" ]; then
         abort "Install dir ${INSTALL_DIR} does not exist"
     fi
     # assign HDFS_DIR

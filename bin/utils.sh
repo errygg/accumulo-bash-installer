@@ -1,39 +1,45 @@
 # START utils.sh
 
-log() {
-    local MESSAGE=$1
-    if [ "${LOG_FILE}x" != "x" ] && [ -e "${LOG_FILE}" ]; then
-        echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
-    fi
-    echo -e "${INDENT}${MESSAGE}"
-}
-
-yellow() {
-   log "${_yellow}$1${_normal}"
-}
-
-red() {
-   log "${_red}$1${_normal}"
-}
-
-green() {
-   log "${_green}$1${_normal}"
-}
-
-blue() {
-   log "${_blue}$1${_normal}"
-}
-
-light_blue() {
-   log "${_light_blue}$1${_normal}"
-}
-
+# helpers to handle setting colors in the term
 _blue=$(tput setaf 4)
 _green=$(tput setaf 2)
 _red=$(tput setaf 1)
 _yellow=$(tput setaf 3)
 _light_blue=$(tput setaf 6)
 _normal=$(tput sgr0)
+
+log() {
+    local MESSAGE=$1
+    if [ ! -z "$LOG_FILE" ] && [ -d "$(dirname $LOG_FILE)" ]; then
+        echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
+    fi
+    echo -e "${INDENT}${MESSAGE}"
+}
+
+yellow() {
+    # to alert the user to do something, like enter info
+    log "${_yellow}$1${_normal}"
+}
+
+red() {
+    # error message, something bad happened
+    log "${_red}$1${_normal}"
+}
+
+green() {
+    # everything is good
+    log "${_green}$1${_normal}"
+}
+
+blue() {
+    # doesn't mean anything, and hard to see.  Currently only used for debugging info
+    log "${_blue}$1${_normal}"
+}
+
+light_blue() {
+    # information log, different from system output
+    log "${_light_blue}$1${_normal}"
+}
 
 abort() {
     local MESSAGE=$1
@@ -52,9 +58,7 @@ read_input() {
     local IPROMPT="${INDENT}${PROMPT}"
     read -p "${_yellow}${IPROMPT}:${_normal} " -e
     local input="${REPLY}"
-    if [ "${LOG_FILE}x" != "x" ] && [ -e "${LOG_FILE}" ]; then
-        echo -e "${INDENT}${PROMPT}: ${input}" >> $LOG_FILE
-    fi
+    log "User entered (${PROMPT} : ${input})" 1>&2 # so it doesn't end up in the return
     echo "${input}"
 }
 
@@ -88,16 +92,34 @@ cleanup_from_abort() {
     # stop accumulo if running
     # stop zookeeper if running
     # stop hadoop if running
-    if [ -d "${HADOOP_HOME}" ]; then
+    if [ -d "${HADOOP_HOME}" ] && [ $(jps -m | grep NameNode) ]; then
         red "Found hadoop, attempting to shutdown"
-        "${HADOOP_HOME}/bin/stop-all.sh"
+        sys "${HADOOP_HOME}/bin/stop-all.sh"
     fi
-    # remove install directory (May have to pass this in)
-    if [[ -d $INSTALL_DIR ]]; then
-        red "Removing ${INSTALL_DIR}"
-        rm -rf ${INSTALL_DIR}
-    fi
+    move_log_file
     echo
+}
+
+move_log_file() {
+    if [ -d "$INSTALL_DIR" ] && [ -e "$LOG_FILE" ]; then
+        yellow "Review the log file in ${INSTALL_DIR}.  It is colored, so try the following command"
+        log "less -R ${INSTALL_DIR}/$(basename $LOG_FILE)"
+        mv "$LOG_FILE" "$INSTALL_DIR"
+    elif [ -e "$LOG_FILE" ]; then
+        yellow "Review the log file in ${LOG_FILE}.  It is colored, so try the following command"
+        log "less -R ${LOG_FILE}"
+    fi
+}
+
+sys() {
+    local CMD=$1
+    light_blue "Running system command '${CMD}'"
+    # execute a system command, tee'ing the results to the log file
+    ORIG_INDENT="${INDENT}" && INDENT=""
+    log "---------------------system command output-----------------------"
+    ${CMD} 2>&1 | tee -a "$LOG_FILE"
+    log "---------------------end system command output-------------------"
+    INDENT="${ORIG_INDENT}"
 }
 
 # END utils.sh

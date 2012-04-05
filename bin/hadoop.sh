@@ -1,7 +1,7 @@
 # START hadoop.sh
 
 install_hadoop() {
-    local INDENT="  "
+    INDENT="  "
 
     # hadoop archive file
     local HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
@@ -9,26 +9,26 @@ install_hadoop() {
     local HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
 
     log
-    yellow "Installing Hadoop..." "${INDENT}"
+    light_blue "Installing Hadoop..."
     INDENT="    "
-    ensure_file "${HADOOP_DEST}" "${HADOOP_SOURCE}" "${INDENT}"
+    ensure_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
 
     # install from archive
-    yellow "Extracting ${HADOOP_DEST} to ${INSTALL_DIR}" "${INDENT}"
-    tar -xzf "${HADOOP_DEST}" -C "${INSTALL_DIR}"
+    light_blue "Extracting ${HADOOP_DEST} to ${INSTALL_DIR}"
+    sys "tar -xzf ${HADOOP_DEST} -C ${INSTALL_DIR}"
 
     # setup directory
     local HADOOP_DIR="${INSTALL_DIR}/hadoop-${HADOOP_VERSION}"
     local HADOOP_HOME="${INSTALL_DIR}/hadoop"
-    yellow "Setting up ${HADOOP_HOME}" "${INDENT}"
-    ln -s "${HADOOP_DIR}" "${HADOOP_HOME}"
+    light_blue "Setting up ${HADOOP_HOME}" "${INDENT}"
+    sys "ln -s ${HADOOP_DIR} ${HADOOP_HOME}"
 
     # configure properties, these are very specific to the version
-    yellow "Configuring hadoop" "${INDENT}"
+    light_blue "Configuring hadoop"
     INDENT="      "
     local HADOOP_CONF="${HADOOP_HOME}/conf"
 
-    yellow "Setting up core-site.xml" "${INDENT}"
+    light_blue "Setting up core-site.xml"
     local CORE_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -45,7 +45,7 @@ EOF
 )
     echo "${CORE_SITE}" > "${HADOOP_CONF}/core-site.xml"
 
-    yellow "Setting up mapred-site.xml" "${INDENT}"
+    light_blue "Setting up mapred-site.xml"
     local MAPRED_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -62,7 +62,7 @@ EOF
 )
     echo "${MAPRED_SITE}" > "${HADOOP_CONF}/mapred-site.xml"
 
-    yellow "Setting up hdfs-site.xml" "${INDENT}"
+    light_blue "Setting up hdfs-site.xml"
     local HDFS_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -90,7 +90,7 @@ EOF
 )
     echo "${HDFS_SITE}" > "${HADOOP_CONF}/hdfs-site.xml"
 
-    yellow "Setting up hadoop-env.sh" "${INDENT}"
+    light_blue "Setting up hadoop-env.sh"
     local HADOOP_ENV=$( cat <<-EOF
 # Set Hadoop-specific environment variables here.
 
@@ -153,31 +153,32 @@ EOF
     echo "${HADOOP_ENV}" > "${HADOOP_CONF}/hadoop-env.sh"
 
     # format hdfs
-    yellow "Formatting namenode" "${INDENT}"
-    "${HADOOP_HOME}/bin/hadoop" namenode -format
+    light_blue "Formatting namenode"
+    sys "${HADOOP_HOME}/bin/hadoop namenode -format"
 
     # start hadoop
     log ""
-    yellow "Starting hadoop" "${INDENT}"
-    "${HADOOP_HOME}/bin/start-all.sh"
+    light_blue "Starting hadoop"
+    sys "${HADOOP_HOME}/bin/start-all.sh"
 
     # test installation
     log ""
-    yellow "Testing hadoop" "${INDENT}"
+    light_blue "Testing hadoop"
     INDENT="        "
-    yellow "Creating a /user/test directory in hdfs" "${INDENT}"
-    "${HADOOP_HOME}/bin/hadoop" fs -mkdir /user/test
+    light_blue "Creating a /user/test directory in hdfs"
+    sys "${HADOOP_HOME}/bin/hadoop fs -mkdir /user/test"
 
-    yellow "Ensure the directory was created" "${INDENT}"
+    light_blue "Ensure the directory was created with 'fs -ls /user'"
     local hadoop_check=$("${HADOOP_HOME}/bin/hadoop" fs -ls /user)
     if [[ "${hadoop_check}" =~ .*/user/test ]]; then
-         yellow "Check looks good, removing directory" "${INDENT}"
-        "${HADOOP_HOME}/bin/hadoop" fs -rmr /user/test
+        light_blue "Check looks good, removing directory"
+        sys "${HADOOP_HOME}/bin/hadoop fs -rmr /user/test"
     else
-        abort "Unable to create the directory in HDFS" "$INDENT"
+        abort "Unable to create the directory in HDFS"
     fi
 
-    green "Hadoop is installed and running" "  "
+    INDENT="  "
+    green "Hadoop is installed and running"
 }
 
 # END hadoop.sh

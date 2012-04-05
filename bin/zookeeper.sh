@@ -2,8 +2,8 @@
 
 install_zookeeper() {
     log
-    local INDENT="  "
-    yellow "Installing Zookeeper..." "${INDENT}"
+    INDENT="  "
+    light_blue "Installing Zookeeper..."
     INDENT="    "
     # ensure file in archive directory
     # install from archive

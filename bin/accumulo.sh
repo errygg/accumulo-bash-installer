@@ -2,8 +2,8 @@
 
 install_accumulo() {
     log
-    local INDENT="  "
-    yellow "Installing Accumulo..." "${INDENT}"
+    INDENT="  "
+    light_blue "Installing Accumulo..."
     INDENT="    "
     # ensure file in archive directory
     # install from archive

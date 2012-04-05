@@ -3,7 +3,7 @@
 shopt -s compat31
 
 # include the other modules
-script_dir() {
+_script_dir() {
     if [ -z "${SCRIPT_DIR}" ]; then
     # even resolves symlinks, see
     # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
@@ -15,85 +15,81 @@ script_dir() {
 }
 # START utils.sh
 
-cleanup_from_abort() {
-    if [ ! -z $NO_RUN ]; then
-        # no need to cleanup, user specified --no-run
-        return
-    fi
-    # stop accumulo if running
-    # stop zookeeper if running
-    # stop hadoop if running
-    if [ -d "${HADOOP_HOME}" ]; then
-        red "Found hadoop, attempting to shutdown"
-        "${HADOOP_HOME}/bin/stop-all.sh"
-    fi
-    # remove install directory (May have to pass this in)
-    if [[ -d $INSTALL_DIR ]]; then
-        red "Removing ${INSTALL_DIR}"
-        rm -rf ${INSTALL_DIR}
-    fi
-    echo
-}
+# helpers to handle setting colors in the term
+_blue=$(tput setaf 4)
+_green=$(tput setaf 2)
+_red=$(tput setaf 1)
+_yellow=$(tput setaf 3)
+_light_blue=$(tput setaf 6)
+_normal=$(tput sgr0)
 
 log() {
     local MESSAGE=$1
-    local INDENT=$2
-    echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
+    if [ ! -z "$LOG_FILE" ] && [ -d "$(dirname $LOG_FILE)" ]; then
+        echo -e "${INDENT}${MESSAGE}" >> $LOG_FILE
+    fi
     echo -e "${INDENT}${MESSAGE}"
 }
 
-color_log() {
-    # TODO: test on linux, works on Mac OSX
-    local COLOR=$1
-    local MESSAGE=$2
-    local INDENT=$3
-    echo -n -e "\033[0;${COLOR}m"
-    log "${MESSAGE}" "${INDENT}"
-    echo -n -e "\033[0m"
-}
-
 yellow() {
-    color_log "33" "$1" "$2"
+    # to alert the user to do something, like enter info
+    log "${_yellow}$1${_normal}"
 }
 
 red() {
-    color_log "31" "$1" "$2"
+    # error message, something bad happened
+    log "${_red}$1${_normal}"
 }
 
 green() {
-    color_log "32" "$1" "$2"
+    # everything is good
+    log "${_green}$1${_normal}"
 }
 
 blue() {
-    color_log "34" "$1" "$2"
+    # doesn't mean anything, and hard to see.  Currently only used for debugging info
+    log "${_blue}$1${_normal}"
+}
+
+light_blue() {
+    # information log, different from system output
+    log "${_light_blue}$1${_normal}"
 }
 
 abort() {
     local MESSAGE=$1
-    local INDENT=$2
     echo
-    red "${INDENT}Aborting..."
-    red "${INDENT}${MESSAGE}" 1>&2
+    red "Aborting..." 1>&2
+    red "${MESSAGE}" 1>&2
     cleanup_from_abort
     exit 1
 }
 
 read_input() {
     local PROMPT=$1
-    local INDENT=$2
     if [[ ! -n $PROMPT ]]; then
       abort "Script requested user input without a prompt message"
     fi
-    read -p "${INDENT}${PROMPT}: " -e
-    echo "${REPLY}"
+    local IPROMPT="${INDENT}${PROMPT}"
+    read -p "${_yellow}${IPROMPT}:${_normal} " -e
+    local input="${REPLY}"
+    log "User entered (${PROMPT} : ${input})" 1>&2 # so it doesn't end up in the return
+    echo "${input}"
+}
+
+_which_curl() {
+    # pulled out to make it easier to test
+    which curl
+}
+
+_which_gpg() {
+    # pulled out to make it easier to test
+    which gpg
 }
 
 check_curl() {
     if [ -z $CURL ]; then
-        which curl > /dev/null && CURL=1
-        if [ -z $CURL ]; then
-          abort "Could not find curl on your path"
-        fi
+        CURL=$(_which_curl) || abort "Could not find curl on your path"
     fi
 }
 
@@ -103,11 +99,46 @@ check_curl() {
 >>>>>>> a9501cb... Dist command replacing files now
 check_gpg() {
     if [ -z $GPG ]; then
-        which gpg > /dev/null && GPG=1
-        if [ -z $GPG ]; then
-            abort "Could not find gpg on your path"
-        fi
+        GPG=$(_which_gpg) || abort "Could not find gpg on your path"
     fi
+}
+
+cleanup_from_abort() {
+    if [ ! -z $NO_RUN ]; then
+        # no need to cleanup, user specified --no-run
+        return
+    fi
+    # stop accumulo if running
+    # stop zookeeper if running
+    # stop hadoop if running
+    if [ -d "${HADOOP_HOME}" ] && [ $(jps -m | grep NameNode) ]; then
+        red "Found hadoop, attempting to shutdown"
+        sys "${HADOOP_HOME}/bin/stop-all.sh"
+    fi
+    move_log_file
+    echo
+}
+
+move_log_file() {
+    if [ -d "$INSTALL_DIR" ] && [ -e "$LOG_FILE" ]; then
+        yellow "Review the log file in ${INSTALL_DIR}.  It is colored, so try the following command"
+        log "less -R ${INSTALL_DIR}/$(basename $LOG_FILE)"
+        mv "$LOG_FILE" "$INSTALL_DIR"
+    elif [ -e "$LOG_FILE" ]; then
+        yellow "Review the log file in ${LOG_FILE}.  It is colored, so try the following command"
+        log "less -R ${LOG_FILE}"
+    fi
+}
+
+sys() {
+    local CMD=$1
+    light_blue "Running system command '${CMD}'"
+    # execute a system command, tee'ing the results to the log file
+    ORIG_INDENT="${INDENT}" && INDENT=""
+    log "---------------------system command output-----------------------"
+    ${CMD} 2>&1 | tee -a "$LOG_FILE"
+    log "---------------------end system command output-------------------"
+    INDENT="${ORIG_INDENT}"
 }
 
 # END utils.sh
@@ -116,39 +147,38 @@ check_gpg() {
 verify_file() {
     local FILE=$1
     local SIG=$2
-    local INDENT=$3
-    yellow "Verifying the signature of ${FILE}" "${INDENT}"
-    gpg --verify "${SIG}" "${FILE}"
+    check_gpg
+    light_blue "Verifying the signature of ${FILE}"
+    $GPG --verify "${SIG}" "${FILE}"
     local verified=$?
     if [ "$verified" -gt 0 ]; then
-        red "Verification failed" "${INDENT}"
+        red "Verification failed"
         local loop=0
         local cont=""
         while [ "$loop" -lt 1 ]; do
-            cont=$(read_input "Do you want to continue anyway [y/n]" "${INDENT}")
+            cont=$(read_input "Do you want to continue anyway [y/n]")
             if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N" ]; then
                 loop=1
             fi
         done
         if [ "${cont}" == "y" ] || [ "${cont}" == "Y" ]; then
-            yellow "Ok, installing unverified file" "${INDENT}"
+            light_blue "Ok, installing unverified file"
         else
             abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html" "${INDENT}"
         fi
     else
-        yellow "Verification passed" "${INDENT}"
+        light_blue "Verification passed"
     fi
 }
 
 download_file() {
     local DEST=$1
     local SRC=$2
-    local INDENT=$3
     check_curl
     # get the file
-    yellow "Downloading ${SRC} to ${DEST}" "${INDENT}"
-    yellow "Please wait..." "${INDENT}"
-    if curl -L "${SRC}" -o "${DEST}"; then
+    light_blue "Downloading ${SRC} to ${DEST}"
+    light_blue "Please wait..."
+    if $CURL -L "${SRC}" -o "${DEST}"; then
         true
     else
         abort "Could not download ${SRC}"
@@ -162,90 +192,140 @@ download_file() {
 ensure_file() {
     local FILE_DEST=$1
     local FILE_SRC=$2
-    local INDENT=$3
     if [ ! -e "${FILE_DEST}" ]; then
         download_file "${FILE_DEST}" "${FILE_SRC}" "${INDENT}"
         if [ ! -e "${FILE_DEST}.asc" ]; then
             download_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" "${INDENT}"
         fi
-        yellow "Verifying ${FILE_DEST}"
-        verify_file "${FILE_DEST}" "${FILE_DEST}.asc" "${INDENT}"
+        light_blue "Verifying ${FILE_DEST}"
+        verify_file "${FILE_DEST}" "${FILE_DEST}.asc"
     else
-        yellow "Using existing file ${FILE_DEST}" "${INDENT}"
+        light_blue "Using existing file ${FILE_DEST}"
     fi
 
 }
 
 # END apache_downloader.sh
+
 # START pre_install.sh
 
+<<<<<<< HEAD
 setup_configs () {
 >>>>>>> b86e42e... Reorg complete, for now
     log
     local INDENT="  "
     yellow "Setting up configuration and checking requirements..." "${INDENT}"
     INDENT="    "
+=======
+_uname() {
+    # wrapper so I can replace in tests
+    echo "$(uname)"
+}
+
+check_os() {
+>>>>>>> eb44746... Update the dist file
   # check os
-    local PLATFORM=`uname`
+    local PLATFORM=`_uname`
     case $PLATFORM in
-        "Darwin") yellow "You are installing to OS: ${PLATFORM}" "${INDENT}";;
+        "Darwin") light_blue "You are installing to OS: ${PLATFORM}" ;;
         *)
-            abort "Installer does not support ${PLATFORM}" "${INDENT}"
+            abort "Installer does not support ${PLATFORM}"
     esac
+}
 
-  # check for a config file
-    if [ -n "${CONFIG_FILE}" ]; then
-        yellow "Using $CONFIG_FILE.  Here is the contents" "${INDENT}"
-        cat $CONFIG_FILE
+check_config_file() {
+    # check for a config file
+    if [ -z $CONFIG_FILE ]; then
+        light_blue  "No config file found, we will get them from you now"
     else
-        yellow  "No config file found, we will get them from you now" "${INDENT}"
+        light_blue "Using $CONFIG_FILE.  Here is the contents"
+        cat "${CONFIG_FILE}"
+        source "${CONFIG_FILE}"
     fi
+}
 
+get_install_dir() {
   # get install directory
-    if [ -n "${INSTALL_DIR}" ]; then
-    #TODO test this with configs and options
-        yellow "Install directory set to ${INSTALL_DIR} by command line option" "${INDENT}"
-    else
+    if [ -z $INSTALL_DIR ]; then
         while [ "${INSTALL_DIR}x" == "x" ]; do
-            INSTALL_DIR=$(read_input "Enter install directory" "${INDENT}")
+            INSTALL_DIR=$(read_input "Enter install directory")
         done
+    else
+        light_blue "Install directory already set to ${INSTALL_DIR}"
     fi
 
   # check install direcotry
-    if [ -d $INSTALL_DIR ]; then
-        abort "Directory '${INSTALL_DIR}' already exists. You must install to a new directory." "${INDENT}"
+    if [ -d "$INSTALL_DIR" ]; then
+        abort "Directory '${INSTALL_DIR}' already exists. You must install to a new directory."
     else
-        yellow "Creating directory ${INSTALL_DIR}" "${INDENT}"
+        light_blue "Creating directory ${INSTALL_DIR}"
         mkdir -p "${INSTALL_DIR}"
     fi
+}
 
-  # assign HDFS_DIR
+get_hdfs_dir() {
+    if [ "${INSTALL_DIR}x" == "x" ]; then
+        abort "INSTALL_DIR is not set"
+    fi
+    if [ ! -d "$INSTALL_DIR" ]; then
+        abort "Install dir ${INSTALL_DIR} does not exist"
+    fi
+    # assign HDFS_DIR
     HDFS_DIR="${INSTALL_DIR}/hdfs"
-    yellow "Making HDFS directory ${HDFS_DIR}" "${INDENT}"
-    mkdir -p "${HDFS_DIR}"
+    light_blue "Making HDFS directory ${HDFS_DIR}"
+    mkdir "${HDFS_DIR}"
+}
 
+get_java_home() {
   # get java_home
-    if [ ! -n "${JAVA_HOME}" ]; then
-        JAVA_HOME=$(read_input "Enter JAVA_HOME location" "${INDENT}")
+    if [ -z $JAVA_HOME ]; then
+        JAVA_HOME=$(read_input "Enter JAVA_HOME location")
     fi
 
   # check java_home
     if [ ! -d $JAVA_HOME ]; then
-        abort "JAVA_HOME does not exist: ${JAVA_HOME}" "${INDENT}"
+        abort "JAVA_HOME does not exist: ${JAVA_HOME}"
     else
-        yellow "JAVA_HOME set to ${JAVA_HOME}" "${INDENT}"
+        light_blue "JAVA_HOME set to ${JAVA_HOME}"
     fi
+}
 
+_hostname() {
+    # wrapper so it can easily be replaced in testing
+    echo $(hostname)
+}
+
+_ssh() {
+    # wrapper so it can easily be replaced in testing
+    # this function sets publickey as the only authentication, which is
+    # the passwordless way Hadoop communicates in psuedo distributed mode
+    echo $(ssh -o 'PreferredAuthentications=publickey' localhost "hostname")
+}
+
+check_ssh() {
   # check ssh localhost
-    yellow "Checking passwordless SSH (for Hadoop)" "${INDENT}"
-    local HOSTNAME=$(hostname)
-    local SSH_HOST=$(ssh -o 'PreferredAuthentications=publickey' localhost "hostname")
+    light_blue "Checking passwordless SSH (for Hadoop)"
+    local HOSTNAME=$(_hostname)
+    local SSH_HOST=$(_ssh)
     if [[ "${HOSTNAME}" == "${SSH_HOST}" ]]; then
-        yellow "SSH appears good" "${INDENT}"
+        light_blue "SSH appears good"
     else
-        abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless" "${INDENT}"
+        abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless"
     fi
+}
 
+pre_install () {
+    log
+    INDENT="  "
+    light_blue "Setting up configuration and checking requirements..."
+    INDENT="    "
+
+    check_os
+    check_config_file
+    get_install_dir
+    get_hdfs_dir
+    get_java_home
+    check_ssh
   # TODO: ask which version of accumulo.  Need a good way to manage
 }
 
@@ -253,7 +333,7 @@ setup_configs () {
 # START hadoop.sh
 
 install_hadoop() {
-    local INDENT="  "
+    INDENT="  "
 
     # hadoop archive file
     local HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
@@ -261,26 +341,26 @@ install_hadoop() {
     local HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
 
     log
-    yellow "Installing Hadoop..." "${INDENT}"
+    light_blue "Installing Hadoop..."
     INDENT="    "
-    ensure_file "${HADOOP_DEST}" "${HADOOP_SOURCE}" "${INDENT}"
+    ensure_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
 
     # install from archive
-    yellow "Extracting ${HADOOP_DEST} to ${INSTALL_DIR}" "${INDENT}"
-    tar -xzf "${HADOOP_DEST}" -C "${INSTALL_DIR}"
+    light_blue "Extracting ${HADOOP_DEST} to ${INSTALL_DIR}"
+    sys "tar -xzf ${HADOOP_DEST} -C ${INSTALL_DIR}"
 
     # setup directory
     local HADOOP_DIR="${INSTALL_DIR}/hadoop-${HADOOP_VERSION}"
     local HADOOP_HOME="${INSTALL_DIR}/hadoop"
-    yellow "Setting up ${HADOOP_HOME}" "${INDENT}"
-    ln -s "${HADOOP_DIR}" "${HADOOP_HOME}"
+    light_blue "Setting up ${HADOOP_HOME}" "${INDENT}"
+    sys "ln -s ${HADOOP_DIR} ${HADOOP_HOME}"
 
     # configure properties, these are very specific to the version
-    yellow "Configuring hadoop" "${INDENT}"
+    light_blue "Configuring hadoop"
     INDENT="      "
     local HADOOP_CONF="${HADOOP_HOME}/conf"
 
-    yellow "Setting up core-site.xml" "${INDENT}"
+    light_blue "Setting up core-site.xml"
     local CORE_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -297,7 +377,7 @@ EOF
 )
     echo "${CORE_SITE}" > "${HADOOP_CONF}/core-site.xml"
 
-    yellow "Setting up mapred-site.xml" "${INDENT}"
+    light_blue "Setting up mapred-site.xml"
     local MAPRED_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -314,7 +394,7 @@ EOF
 )
     echo "${MAPRED_SITE}" > "${HADOOP_CONF}/mapred-site.xml"
 
-    yellow "Setting up hdfs-site.xml" "${INDENT}"
+    light_blue "Setting up hdfs-site.xml"
     local HDFS_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -342,7 +422,7 @@ EOF
 )
     echo "${HDFS_SITE}" > "${HADOOP_CONF}/hdfs-site.xml"
 
-    yellow "Setting up hadoop-env.sh" "${INDENT}"
+    light_blue "Setting up hadoop-env.sh"
     local HADOOP_ENV=$( cat <<-EOF
 # Set Hadoop-specific environment variables here.
 
@@ -405,31 +485,32 @@ EOF
     echo "${HADOOP_ENV}" > "${HADOOP_CONF}/hadoop-env.sh"
 
     # format hdfs
-    yellow "Formatting namenode" "${INDENT}"
-    "${HADOOP_HOME}/bin/hadoop" namenode -format
+    light_blue "Formatting namenode"
+    sys "${HADOOP_HOME}/bin/hadoop namenode -format"
 
     # start hadoop
     log ""
-    yellow "Starting hadoop" "${INDENT}"
-    "${HADOOP_HOME}/bin/start-all.sh"
+    light_blue "Starting hadoop"
+    sys "${HADOOP_HOME}/bin/start-all.sh"
 
     # test installation
     log ""
-    yellow "Testing hadoop" "${INDENT}"
+    light_blue "Testing hadoop"
     INDENT="        "
-    yellow "Creating a /user/test directory in hdfs" "${INDENT}"
-    "${HADOOP_HOME}/bin/hadoop" fs -mkdir /user/test
+    light_blue "Creating a /user/test directory in hdfs"
+    sys "${HADOOP_HOME}/bin/hadoop fs -mkdir /user/test"
 
-    yellow "Ensure the directory was created" "${INDENT}"
+    light_blue "Ensure the directory was created with 'fs -ls /user'"
     local hadoop_check=$("${HADOOP_HOME}/bin/hadoop" fs -ls /user)
     if [[ "${hadoop_check}" =~ .*/user/test ]]; then
-         yellow "Check looks good, removing directory" "${INDENT}"
-        "${HADOOP_HOME}/bin/hadoop" fs -rmr /user/test
+        light_blue "Check looks good, removing directory"
+        sys "${HADOOP_HOME}/bin/hadoop fs -rmr /user/test"
     else
-        abort "Unable to create the directory in HDFS" "$INDENT"
+        abort "Unable to create the directory in HDFS"
     fi
 
-    green "Hadoop is installed and running" "  "
+    INDENT="  "
+    green "Hadoop is installed and running"
 }
 
 # END hadoop.sh
@@ -437,8 +518,8 @@ EOF
 
 install_zookeeper() {
     log
-    local INDENT="  "
-    yellow "Installing Zookeeper..." "${INDENT}"
+    INDENT="  "
+    light_blue "Installing Zookeeper..."
     INDENT="    "
     # ensure file in archive directory
     # install from archive
@@ -452,8 +533,8 @@ install_zookeeper() {
 
 install_accumulo() {
     log
-    local INDENT="  "
-    yellow "Installing Accumulo..." "${INDENT}"
+    INDENT="  "
+    light_blue "Installing Accumulo..."
     INDENT="    "
     # ensure file in archive directory
     # install from archive
@@ -467,13 +548,14 @@ install_accumulo() {
 
 post_install() {
     log
-    local INDENT="  "
-    yellow "Running post install...." "${INDENT}"
+    INDENT="  "
+    light_blue "Running post install...."
     INDENT="    "
     # setup bin directory
     # add helpers
     # message about sourcing accumulo-env
-    #cleanup_from_abort #TODO: remove once this script is working
+    # add timestamp to running and user
+    move_log_file
 }
 
 # END post_install.sh
@@ -484,7 +566,7 @@ LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
 HADOOP_VERSION="0.20.2"
 HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
 
-set_config_file () {
+set_config_file() {
     test -f $1 || abort "invalid config file, '$1' does not exist"
     CONFIG_FILE=$1
 }
@@ -515,8 +597,10 @@ EOF
 
 install () {
     green "The Accumulo Installer Script...."
-    yellow "Review this install at ${LOG_FILE}" "  "
-    setup_configs
+    INDENT="  "
+    # TODO: remove from here and put in abort or post_install
+    light_blue "Review this install at ${LOG_FILE}"
+    pre_install
     install_hadoop
     install_zookeeper
     install_accumulo
@@ -525,7 +609,7 @@ install () {
 
 # make sure archive directory exists
 if [ ! -d "${ARCHIVE_DIR}" ]; then
-    echo "Creating archive dir ${ARCHIVE_DIR}" "${INDENT}"
+    echo "Creating archive dir ${ARCHIVE_DIR}"
     mkdir "${ARCHIVE_DIR}"
 fi
 
@@ -557,6 +641,7 @@ fi
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 # built 12.03.27 15:55:45 by Michael Wall
 =======
 # built 12.03.27 13:33:47 by Michael Wall
@@ -573,3 +658,6 @@ fi
 =======
 # built 12.03.27 22:09:38 by Michael Wall
 >>>>>>> 913a4d0... Finish reorg of code and tests.
+=======
+# built 12.04.04 21:31:09 by Michael Wall
+>>>>>>> eb44746... Update the dist file
