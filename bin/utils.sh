@@ -58,7 +58,7 @@ read_input() {
     local IPROMPT="${INDENT}${PROMPT}"
     read -p "${_yellow}${IPROMPT}:${_normal} " -e
     local input="${REPLY}"
-    log "User entered (${PROMPT} : ${input})" 1>&2 # so it doesn't end up in the return
+    log "User entered (${PROMPT}: ${input})" 1>&2 # so it doesn't end up in the return
     echo "${input}"
 }
 
@@ -89,15 +89,27 @@ cleanup_from_abort() {
         # no need to cleanup, user specified --no-run
         return
     fi
-    # stop accumulo if running
-    # stop zookeeper if running
+    stop_accumulo
+    stop_zookeeper
+    stop_hadoop
+    move_log_file
+    echo
+}
+
+stop_accumulo() {
+    local todo=true
+}
+
+stop_zookeeper() {
+    local todo=true
+}
+
+stop_hadoop() {
     # stop hadoop if running
     if [ -d "${HADOOP_HOME}" ] && [ $(jps -m | grep NameNode) ]; then
         red "Found hadoop, attempting to shutdown"
         sys "${HADOOP_HOME}/bin/stop-all.sh"
     fi
-    move_log_file
-    echo
 }
 
 move_log_file() {

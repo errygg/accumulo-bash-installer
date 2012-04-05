@@ -161,6 +161,9 @@ test_read_input_uses_INDENT_and_yellow_for_prompt() {
     eval "function read() {
         echo \"PROMPT:\$1\$2\"
     }"
+    eval "function log() {
+        do_nothing=true
+    }"
     INDENT="          "
 
     # execute
@@ -178,6 +181,9 @@ test_read_input_grabs_user_input() {
     eval "function read() {
         REPLY=\"${retVal}\"
     }"
+    eval "function log() {
+        do_nothing=true
+    }"
 
     # execute
     local output=$(read_input "${prompt}")
@@ -186,7 +192,7 @@ test_read_input_grabs_user_input() {
     assertEquals "${retVal}" "${output}"
 }
 
-test_read_input_with_no_LOG_FILE() {
+test_read_input_call_log_with_prompt_and_reply() {
     # setup
     source_file
     unset LOG_FILE
@@ -195,52 +201,15 @@ test_read_input_with_no_LOG_FILE() {
     eval "function read() {
         REPLY=\"${retVal}\"
     }"
-
-    # execute
-    local output=$(read_input "${prompt}")
-
-    # assert
-    assertEquals "${retVal}" "${output}"
-}
-
-test_read_input_with_LOG_FILE_that_does_not_exist() {
-    # setup
-    source_file
-    LOG_FILE="/tmp/tmp_log_file"
-    rm -rf "${LOG_FILE}" > /dev/null
-    local prompt="Still o log file"
-    local retVal="stillnologhere"
-    eval "function read() {
-        REPLY=\"${retVal}\"
+    eval "function log() {
+        echo \"\$1\"
     }"
 
     # execute
     local output=$(read_input "${prompt}")
 
     # assert
-    assertEquals "${retVal}" "${output}"
-}
-
-test_read_input_with_LOG_FILE() {
-    # setup
-    source_file
-    LOG_FILE="/tmp/tmp_log_file"
-    touch "${LOG_FILE}"
-    local prompt="No log file"
-    local retVal="nologhere"
-    eval "function read() {
-        REPLY=\"${retVal}\"
-    }"
-
-    # execute
-    local output=$(read_input "${prompt}")
-    local logged=$(cat ${LOG_FILE})
-
-    # assert
-    assert_re_match "${logged}" "${prompt}: ${retVal}"
-
-    # cleanup
-    rm -rf "${LOG_FILE}" > /dev/null
+    assertEquals "User entered (${prompt}: ${retVal})" "${output}"
 }
 
 # check_curl
@@ -357,12 +326,21 @@ test_check_gpg_when_no_GPG_and_executable() {
 
 
 # test cleanup_from_abort
-# should stop accumulo if running
-# should stop zookeeper if running
-# should stop hadoop if running
-# should remove install dir
-# should give note again about log file
+# should return if no NO_RUN
+# should stop accumulo
+# should stop zookeeper
+# should stop hadoop
+# should move log file
 
+# test stop accumulo
+
+# test stop zookeeper
+
+# test stop hadoop
+
+# test move log file
+
+# test sys
 
 # load file so we can execute functions
 source_file() {
