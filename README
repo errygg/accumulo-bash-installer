@@ -23,6 +23,8 @@ If you want to install Accumulo without forking this repo, simply run the follow
 
 bash <(curl -s https://raw.github.com/mjwall/accumulo-bash-installer/master/dist/install-accumulo.sh)
 
+If you want to see the options, add a -h to the end of the above command as well, and you will get usage.
+
 Once there is a stable release, I'll make a branch and change the cloneless install directions to point to that.  Currently, I have to remember to run 'make dist' to update that script, so it may not be the latest on master.
 
 PREREQUISTES
