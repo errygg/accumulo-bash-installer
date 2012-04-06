@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# just a simple file to aggregate all tests.  Tests should be run from the project root so it can find the directories correctly, i.e ./test/all.sh.  If you want to run a subset or tests, comment them out below
+# just a simple file to aggregate all tests.  Tests should be run from the project root so it can find the directories correctly, i.e ./test/run_all.sh.  You can run one test file by passing in as a arg, otherwise, you will run all test_* files in the test directory.
 
 shopt -s compat31
 
@@ -22,6 +22,14 @@ run_tests() {
     "$(_script_dir)/${file}"
 }
 
-run_tests "test_install.sh"
-run_tests "test_pre_install.sh"
-run_tests "test_utils.sh"
+
+# simple arg, allows you to run one test, ie
+# run_all test_install.sh
+# with no args, it will run all tests
+if [ $# -eq 1 ]; then
+    run_tests $1
+else
+    for t in "$(_script_dir)"/test_*.sh; do
+        run_tests $(basename $t)
+    done
+fi
