@@ -1,15 +1,26 @@
-- Figure out testing and then test everything
-- Code zookeeper install
-- Code accumulo install
+- test apache downloader
+  -- Maybe give option to change mirror, option to not gpg check
+  -- Perhaps move functions to utils
+- Code zookeeper install and test
+  -- update utils and test_utils once know how to grep jps for running
+- Code accumulo install and test
+  -- version 1.3.5
+  -- version 1.4.0
+  -- HEAD from git mirror, check for git and maven
+  -- update utils and test_utils once know how to grep jps for running
+- Code post install and test
+  -- source cloud-env.sh
 - Update readme
+  -- Move to markdown
+  -- explain use cases (local development, multiple versions, isolation, hardware not vm)
 - Test on linux
 - Catch CTRL-C and run abort
 - Update to hadoop 0.20.203?
 - Look into Travis CI
 - Add VERSION to install and output it to the log
-- On script completion, move install log to INSTALL_DIR and give the user a message
+- Make stable branch and update README to point checkoutless install there
+- Make a pretty github page
+- Publicize
 
 From steve
-- make prompts green
-- ensure gpg is found
 - test for read/write on install directory and give a better message
