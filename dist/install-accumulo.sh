@@ -73,7 +73,7 @@ read_input() {
     local IPROMPT="${INDENT}${PROMPT}"
     read -p "${_yellow}${IPROMPT}:${_normal} " -e
     local input="${REPLY}"
-    log "User entered (${PROMPT} : ${input})" 1>&2 # so it doesn't end up in the return
+    log "User entered (${PROMPT}: ${input})" 1>&2 # so it doesn't end up in the return
     echo "${input}"
 }
 
@@ -93,10 +93,6 @@ check_curl() {
     fi
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> a9501cb... Dist command replacing files now
 check_gpg() {
     if [ -z $GPG ]; then
         GPG=$(_which_gpg) || abort "Could not find gpg on your path"
@@ -108,15 +104,82 @@ cleanup_from_abort() {
         # no need to cleanup, user specified --no-run
         return
     fi
-    # stop accumulo if running
-    # stop zookeeper if running
-    # stop hadoop if running
-    if [ -d "${HADOOP_HOME}" ] && [ $(jps -m | grep NameNode) ]; then
-        red "Found hadoop, attempting to shutdown"
-        sys "${HADOOP_HOME}/bin/stop-all.sh"
-    fi
+    stop_accumulo
+    stop_zookeeper
+    stop_hadoop
     move_log_file
-    echo
+    light_blue "Cleanup finished"
+    log ""
+}
+
+_jps() {
+    # moved out to help test
+    # return 0 if $1 found, 1 otherwise
+    jps -m | grep "$1"
+}
+
+check_java_process() {
+    local to_check=$1
+    local process=""
+    if [ "${to_check}" == "NameNode" ]; then
+        process="Hadoop"
+    elif [ "${to_check}" == "zookeeper" ]; then
+        process="Zookeeper"
+    elif [ "${to_check}" == "accumulo" ]; then
+        process="Accumulo"
+    else
+        abort "Don't know how to check_java_process for ${to_check}"
+    fi
+    local running="not running"
+    _jps "${to_check}" > /dev/null && running="running"
+    echo "${process} ${running}"
+}
+
+stop_accumulo() {
+    # stop accumulo if running
+    # TODO: update process name
+    local running=$(check_java_process "accumulo")
+    if  [ "${running}" == "Accumulo running" ]; then
+        red "Accumulo running, attempting to shut it down"
+        if [ -d "$ACCUMULO_HOME" ]; then
+            sys "${ACCUMULO_HOME}/bin/stop-all.sh"
+        else
+            red "Directory ${ACCUMULO_HOME} not found, can't shut it down"
+        fi
+    else
+        red "Accumulo not running, nothing to stop"
+    fi
+}
+
+stop_zookeeper() {
+    # stop zookeeper if running
+    # TODO: update process name
+    local running=$(check_java_process "zookeeper")
+    if  [ "${running}" == "Zookeeper running" ]; then
+        red "Zookeeper running, attempting to shut it down"
+        if [ -d "$ZOOKEEPER_HOME" ]; then
+            sys "${ZOOKEEPER_HOME}/bin/zkStop.sh"
+        else
+            red "Directory ${ZOOKEEPER_HOME} not found, can't shut it down"
+        fi
+    else
+        red "Zookeeper not running, nothing to stop"
+    fi
+}
+
+stop_hadoop() {
+    # stop hadoop if running
+    local running=$(check_java_process "NameNode")
+    if  [ "${running}" == "Hadoop running" ]; then
+        red "Hadoop running, attempting to shut it down"
+        if [ -d "$HADOOP_HOME" ]; then
+            sys "${HADOOP_HOME}/bin/stop-all.sh"
+        else
+            red "Directory ${HADOOP_HOME} not found, can't shut it down"
+        fi
+    else
+        red "Hadoop not running, nothing to stop"
+    fi
 }
 
 move_log_file() {
@@ -130,13 +193,22 @@ move_log_file() {
     fi
 }
 
+_tee() {
+    # move out to help test
+    tee -a $1
+}
+
 sys() {
     local CMD=$1
     light_blue "Running system command '${CMD}'"
     # execute a system command, tee'ing the results to the log file
     ORIG_INDENT="${INDENT}" && INDENT=""
     log "---------------------system command output-----------------------"
-    ${CMD} 2>&1 | tee -a "$LOG_FILE"
+    if [ -e "$LOG_FILE" ]; then
+        ${CMD} 2>&1 | _tee "$LOG_FILE"
+    else
+        ${CMD} 2>&1
+    fi
     log "---------------------end system command output-------------------"
     INDENT="${ORIG_INDENT}"
 }
@@ -185,10 +257,6 @@ download_file() {
     fi
 }
 
-<<<<<<< HEAD
-=======
->>>>>>> a97c66c... Reorg folders
-=======
 ensure_file() {
     local FILE_DEST=$1
     local FILE_SRC=$2
@@ -209,21 +277,12 @@ ensure_file() {
 
 # START pre_install.sh
 
-<<<<<<< HEAD
-setup_configs () {
->>>>>>> b86e42e... Reorg complete, for now
-    log
-    local INDENT="  "
-    yellow "Setting up configuration and checking requirements..." "${INDENT}"
-    INDENT="    "
-=======
 _uname() {
     # wrapper so I can replace in tests
     echo "$(uname)"
 }
 
 check_os() {
->>>>>>> eb44746... Update the dist file
   # check os
     local PLATFORM=`_uname`
     case $PLATFORM in
@@ -636,28 +695,4 @@ else
     blue "INSTALL_DIR: ${INSTALL_DIR}"
     blue "CONFIG_FILE: ${CONFIG_FILE}"
 fi
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-# built 12.03.27 15:55:45 by Michael Wall
-=======
-# built 12.03.27 13:33:47 by Michael Wall
->>>>>>> a97c66c... Reorg folders
-=======
-# built 12.03.27 15:55:45 by Michael Wall
->>>>>>> a9501cb... Dist command replacing files now
-=======
-# built 12.03.27 17:49:48 by Michael Wall
->>>>>>> b86e42e... Reorg complete, for now
-=======
-# built 12.03.27 22:08:34 by Michael Wall
->>>>>>> 1c53b47... Start refactoring test
-=======
-# built 12.03.27 22:09:38 by Michael Wall
->>>>>>> 913a4d0... Finish reorg of code and tests.
-=======
-# built 12.04.04 21:31:09 by Michael Wall
->>>>>>> eb44746... Update the dist file
+# built 12.04.05 22:43:24 by Michael Wall
