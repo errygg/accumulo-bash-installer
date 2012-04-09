@@ -824,10 +824,62 @@ test_check_archive_file_when_file_exists() {
     unset FILE_DEST
 }
 
+test_check_archive_file_downloads_file_and_sig_when_file_missing() {
+    # setup
+    source_file
+    FILE_SRC="http://blah.com/blah.file"
+    FILE_DEST=/tmp/blah
+    rm -rf ${FILE_DEST} 2>&1 > /dev/null
+    eval "function download_apache_file() {
+        echo \"Downloading \$2 to \$1\"
+    }"
+    eval "function verify_apache_file() {
+        echo Calling verify
+    }"
 
-# test_check_archive_file_downloads_file_when_file_missing
-# test_check_archive_file_downloads_sig_when_file_missing
-# test_check_archive_file_verifies_file_when_file_missing
+    # execute
+    local output=$(check_archive_file ${FILE_DEST} ${FILE_SRC})
+
+    # assert
+    assert_re_match "${output}" "Downloading ${FILE_SRC} to ${FILE_DEST}"
+    assert_re_match "${output}" "Downloading ${FILE_SRC}.asc to ${FILE_DEST}.asc"
+
+    # cleanup
+    unset FILE_DEST
+    unset FILE_SRC
+}
+
+test_check_archive_file_verifies_file_when_file_missing() {
+    # setup
+    source_file
+    FILE_SRC="http://blah.com/blah.file"
+    FILE_DEST=/tmp/blah
+    rm -rf ${FILE_DEST} 2>&1 > /dev/null
+    eval "function download_apache_file() {
+        echo Downloading
+    }"
+    eval "function verify_apache_file() {
+        echo Verifying \$1 with \$2
+    }"
+
+    # execute
+    local output=$(check_archive_file ${FILE_DEST} ${FILE_SRC})
+
+    # assert
+    assert_re_match "${output}" "Verifying ${FILE_DEST} with ${FILE_DEST}.asc"
+
+    # cleanup
+    unset FILE_DEST
+    unset FILE_SRC
+}
+
+# test download_apache_file
+# test_download_apache_file_with_1_arg
+# test_download_apache_file_with_0_arg
+# test_download_apache_file_when_check_curl_fails
+# test_download_apache_file_when_file_exists
+# test_download_apache_file_when_download_fails
+# test_download_apache_file_when_download_succeeds
 
 # load file so we can execute functions
 source_file() {

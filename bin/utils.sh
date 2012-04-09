@@ -206,9 +206,7 @@ check_archive_file() {
     local FILE_SRC=$2
     if [ ! -e "${FILE_DEST}" ]; then
         download_apache_file "${FILE_DEST}" "${FILE_SRC}"
-        if [ ! -e "${FILE_DEST}.asc" ]; then
-            download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc"
-        fi
+        download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc"
         light_blue "Verifying ${FILE_DEST}"
         verify_apache_file "${FILE_DEST}" "${FILE_DEST}.asc"
     else
@@ -222,6 +220,7 @@ download_apache_file() {
     local SRC=$2
     check_curl
     # get the file
+    # abort if file exists
     light_blue "Downloading ${SRC} to ${DEST}"
     light_blue "Please wait..."
     if $CURL -L "${SRC}" -o "${DEST}"; then
