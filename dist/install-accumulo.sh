@@ -213,10 +213,7 @@ sys() {
     INDENT="${ORIG_INDENT}"
 }
 
-# END utils.sh
-# START apache_downloader.sh
-
-verify_file() {
+verify_apache_file() {
     local FILE=$1
     local SIG=$2
     check_gpg
@@ -243,7 +240,7 @@ verify_file() {
     fi
 }
 
-download_file() {
+download_apache_file() {
     local DEST=$1
     local SRC=$2
     check_curl
@@ -257,23 +254,23 @@ download_file() {
     fi
 }
 
-ensure_file() {
+check_archive_file() {
     local FILE_DEST=$1
     local FILE_SRC=$2
     if [ ! -e "${FILE_DEST}" ]; then
-        download_file "${FILE_DEST}" "${FILE_SRC}" "${INDENT}"
+        download_apache_file "${FILE_DEST}" "${FILE_SRC}" "${INDENT}"
         if [ ! -e "${FILE_DEST}.asc" ]; then
-            download_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" "${INDENT}"
+            download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" "${INDENT}"
         fi
         light_blue "Verifying ${FILE_DEST}"
-        verify_file "${FILE_DEST}" "${FILE_DEST}.asc"
+        verify_apache_file "${FILE_DEST}" "${FILE_DEST}.asc"
     else
         light_blue "Using existing file ${FILE_DEST}"
     fi
 
 }
 
-# END apache_downloader.sh
+# END utils.sh
 
 # START pre_install.sh
 
@@ -402,7 +399,7 @@ install_hadoop() {
     log
     light_blue "Installing Hadoop..."
     INDENT="    "
-    ensure_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
+    check_archive_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
 
     # install from archive
     light_blue "Extracting ${HADOOP_DEST} to ${INSTALL_DIR}"
@@ -695,4 +692,4 @@ else
     blue "INSTALL_DIR: ${INSTALL_DIR}"
     blue "CONFIG_FILE: ${CONFIG_FILE}"
 fi
-# built 12.04.05 22:43:24 by Michael Wall
+# built 12.04.08 21:04:26 by Michael Wall

@@ -21,6 +21,7 @@
 - Make stable branch and update README to point checkoutless install there
 - Make a pretty github page
 - Publicize
+- Ensure install dir is writable
 
 From steve
 - test for read/write on install directory and give a better message

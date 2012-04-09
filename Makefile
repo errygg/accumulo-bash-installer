@@ -19,7 +19,6 @@ _dist :
 	echo "# built ${NOW} by ${USER}" >> ${DIST_DIR}/${TMP_FILE}
 	mv ${DIST_DIR}/${TMP_FILE} ${DIST}
 	awk '/source .*?utils.sh/{system("cat bin/utils.sh");next}1' ${DIST} > ${DIST}.1 && mv ${DIST}.1 ${DIST}
-	awk '/source .*?apache_downloader.sh/{system("cat bin/apache_downloader.sh");next}1' ${DIST} > ${DIST}.1 && mv ${DIST}.1 ${DIST}
 	awk '/source .*?pre_install.sh/{system("cat bin/pre_install.sh");next}1' ${DIST} > ${DIST}.1 && mv ${DIST}.1 ${DIST}
 	awk '/source .*?hadoop.sh/{system("cat bin/hadoop.sh");next}1' ${DIST} > ${DIST}.1 && mv ${DIST}.1 ${DIST}
 	awk '/source .*?zookeeper.sh/{system("cat bin/zookeeper.sh");next}1' ${DIST} > ${DIST}.1 && mv ${DIST}.1 ${DIST}

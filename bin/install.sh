@@ -14,7 +14,6 @@ _script_dir() {
     echo "${SCRIPT_DIR}"
 }
 source "$(_script_dir)/utils.sh"
-source "$(_script_dir)/apache_downloader.sh"
 source "$(_script_dir)/pre_install.sh"
 source "$(_script_dir)/hadoop.sh"
 source "$(_script_dir)/zookeeper.sh"

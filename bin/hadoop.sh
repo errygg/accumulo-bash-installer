@@ -11,7 +11,7 @@ install_hadoop() {
     log
     light_blue "Installing Hadoop..."
     INDENT="    "
-    ensure_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
+    check_archive_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
 
     # install from archive
     light_blue "Extracting ${HADOOP_DEST} to ${INSTALL_DIR}"
