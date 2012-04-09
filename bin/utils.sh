@@ -198,6 +198,39 @@ sys() {
     INDENT="${ORIG_INDENT}"
 }
 
+check_archive_file() {
+    if [ $# -ne 2 ]; then
+        abort "You must pass in both FILE_DEST and FILE_SRC"
+    fi
+    local FILE_DEST=$1
+    local FILE_SRC=$2
+    if [ ! -e "${FILE_DEST}" ]; then
+        download_apache_file "${FILE_DEST}" "${FILE_SRC}"
+        if [ ! -e "${FILE_DEST}.asc" ]; then
+            download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc"
+        fi
+        light_blue "Verifying ${FILE_DEST}"
+        verify_apache_file "${FILE_DEST}" "${FILE_DEST}.asc"
+    else
+        light_blue "Using existing file ${FILE_DEST}"
+    fi
+
+}
+
+download_apache_file() {
+    local DEST=$1
+    local SRC=$2
+    check_curl
+    # get the file
+    light_blue "Downloading ${SRC} to ${DEST}"
+    light_blue "Please wait..."
+    if $CURL -L "${SRC}" -o "${DEST}"; then
+        true
+    else
+        abort "Could not download ${SRC}"
+    fi
+}
+
 verify_apache_file() {
     local FILE=$1
     local SIG=$2
@@ -223,36 +256,6 @@ verify_apache_file() {
     else
         light_blue "Verification passed"
     fi
-}
-
-download_apache_file() {
-    local DEST=$1
-    local SRC=$2
-    check_curl
-    # get the file
-    light_blue "Downloading ${SRC} to ${DEST}"
-    light_blue "Please wait..."
-    if $CURL -L "${SRC}" -o "${DEST}"; then
-        true
-    else
-        abort "Could not download ${SRC}"
-    fi
-}
-
-check_archive_file() {
-    local FILE_DEST=$1
-    local FILE_SRC=$2
-    if [ ! -e "${FILE_DEST}" ]; then
-        download_apache_file "${FILE_DEST}" "${FILE_SRC}" "${INDENT}"
-        if [ ! -e "${FILE_DEST}.asc" ]; then
-            download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" "${INDENT}"
-        fi
-        light_blue "Verifying ${FILE_DEST}"
-        verify_apache_file "${FILE_DEST}" "${FILE_DEST}.asc"
-    else
-        light_blue "Using existing file ${FILE_DEST}"
-    fi
-
 }
 
 # END utils.sh

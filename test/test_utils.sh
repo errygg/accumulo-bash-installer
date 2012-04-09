@@ -782,6 +782,53 @@ test_sys_with_LOG_FILE() {
     unset LOG_FILE
 }
 
+# test check_archive_file
+
+test_check_archive_file_when_no_FILE_SRC() {
+    # setup
+    source_file
+
+    # execute
+    local output=$(check_archive_file "dest" 2>&1)
+
+    # assert
+    assert_re_match "${output}" "You must pass in both FILE_DEST and FILE_SRC"
+}
+
+test_check_archive_file_when_no_FILE_DEST_or_FILE_SRC() {
+    # setup
+    source_file
+
+    # execute
+    local output=$(check_archive_file 2>&1)
+
+    # assert
+    assert_re_match "${output}" "You must pass in both FILE_DEST and FILE_SRC"
+}
+
+
+test_check_archive_file_when_file_exists() {
+    # setup
+    source_file
+    FILE_DEST=/tmp/blah
+    touch ${FILE_DEST}
+
+    # execute
+    local output=$(check_archive_file ${FILE_DEST} "blah")
+
+    # assert
+    assert_re_match "${output}" "Using existing file ${FILE_DEST}"
+
+    # cleanup
+    rm ${FILE_DEST}
+    unset FILE_DEST
+}
+
+
+# test_check_archive_file_downloads_file_when_file_missing
+# test_check_archive_file_downloads_sig_when_file_missing
+# test_check_archive_file_verifies_file_when_file_missing
+
 # load file so we can execute functions
 source_file() {
     # need to dump to /dev/null, or the output shows in the test
