@@ -21,7 +21,7 @@ source "$(_script_dir)/accumulo.sh"
 source "$(_script_dir)/post_install.sh"
 
 # setup some variables
-ARCHIVE_DIR="${HOME}/.accumulo-install-archive"
+ARCHIVE_DIR="${HOME}/.accumulo-install-archive" # default
 LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
 HADOOP_VERSION="0.20.2"
 HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
@@ -34,6 +34,10 @@ set_config_file() {
 set_install_dir() {
     test ! -d $1 || abort "Directory '$1' already exists. You must install to a new directory."
     INSTALL_DIR=$1
+}
+
+set_archive_dir() {
+    ARCHIVE_DIR=$1
 }
 
 usage () {
@@ -51,6 +55,7 @@ usage () {
     -h                  display this message
     -f <config_file>    load configs from instead of prompting
     -d, --directory     sets install directory, must not exist
+    -a, --archive-dir   sets the archive directory
 
 EOF
 }
@@ -67,20 +72,15 @@ install () {
     post_install
 }
 
-# make sure archive directory exists
-if [ ! -d "${ARCHIVE_DIR}" ]; then
-    echo "Creating archive dir ${ARCHIVE_DIR}"
-    mkdir "${ARCHIVE_DIR}"
-fi
-
 # parse args here
 while test $# -ne 0; do
     arg=$1; shift
     case $arg in
-        --no-run) NO_RUN=1; shift ;; # allows sourcing without a run
+        --no-run) NO_RUN=1 ;; # allows sourcing without a run
         -h) usage; exit 0 ;;
         -f) set_config_file $1; shift ;;
         -d|--directory) set_install_dir $1; shift ;;
+        -a|--archive-dir) set_archive_dir $1; shift ;;
         *)
             usage
             abort "ERROR - unknown option : ${arg}"
@@ -88,11 +88,20 @@ while test $# -ne 0; do
     esac
 done
 
+# make sure archive directory exists
+if [ ! -d "${ARCHIVE_DIR}" ]; then
+    echo "Creating archive dir ${ARCHIVE_DIR}"
+    mkdir "${ARCHIVE_DIR}"
+else
+    echo "Archive dir ${ARCHIVE_DIR} exists"
+fi
+
 if [ -z $NO_RUN ]; then
     install $*
 else
     # useful for testing
     blue "--no-run passed in, dumping configs"
+    blue "ARCHIVE_DIR: ${ARCHIVE_DIR}"
     blue "INSTALL_DIR: ${INSTALL_DIR}"
     blue "CONFIG_FILE: ${CONFIG_FILE}"
 fi

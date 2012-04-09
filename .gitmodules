@@ -1,0 +1,3 @@
+[submodule "test/lib/bats"]
+	path = test/lib/bats
+	url = https://github.com/sstephenson/bats.git
