@@ -44,3 +44,7 @@ test_function_called() {
 @test "test install calls post_install" {
     test_function_called "post_install"
 }
+
+@test "test that travis catches my failures correctly" {
+    false
+}
