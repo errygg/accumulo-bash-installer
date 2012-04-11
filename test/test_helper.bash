@@ -3,6 +3,9 @@
 # if you want info about what failed, set DEBUG=true in the test and get more output.  By
 # default, that output is not shown to remain TAP compliant
 
+# regex as written here need double quotes to work
+shopt -s compat31
+
 if [ "${HELPER_LOADED}" != true ]; then
     # lets only load this if it hasn't been loaded
 
@@ -38,7 +41,8 @@ if [ "${HELPER_LOADED}" != true ]; then
             echo "Output: ${output}"
             echo "Pattern: ${re_pattern}"
         fi
-        [[ "${output}" =~ "${re_pattern}" ]]
+        local without_line_break=$(echo "${output}" | tr '\n' ';')
+        [[ "${without_line_break}" =~ "${re_pattern}" ]]
     }
 
     assert_output_does_not_match() {
@@ -48,7 +52,18 @@ if [ "${HELPER_LOADED}" != true ]; then
             echo "Output: ${output}"
             echo "Pattern: ${re_pattern}"
         fi
-        [[ ! "${output}" =~ "${re_pattern}" ]]
+        local without_line_break=$(echo "${output}" | tr '\n' ';')
+        [[ ! "${without_line_break}" =~ "${re_pattern}" ]]
+    }
+
+    assert_output_equals() {
+        local expected=$1
+        if [ ! -z "$DEBUG" ]; then
+            echo "Expected output to equal string"
+            echo "Output: ${output}"
+            echo "String: ${expected}"
+        fi
+        [ "${output}" == "${expected}" ]
     }
 
     assert_no_error() {
@@ -63,6 +78,18 @@ if [ "${HELPER_LOADED}" != true ]; then
             echo "Status is $status, expected great than 0"
         fi
         [ $status -gt 0 ]
+    }
+
+    assert_directory_exists() {
+        DIR=$1
+        if [ ! -z "$DEBUG" ]; then
+            if [ -d $DIR ]; then
+                echo "Directory $DIR exists"
+            else
+                echo "Expected $DIR to exist but didn't"
+            fi
+        fi
+        [ -d $DIR ]
     }
 
 fi

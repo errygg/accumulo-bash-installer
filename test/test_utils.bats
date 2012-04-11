@@ -1,83 +1,79 @@
-#!/bin/bash
+load test_helper
 
-FILE="./bin/utils.sh"
+CMD="$BATS_TEST_DIRNAME/../bin/utils.sh"
+TMP_DIR="/tmp/ac-utils-test"
+DEBUG=true # comment this out if you don't want the extra info, only shows debug for failures
+any="[[:print:]]" # regex match of any printable character, use $any in the regex string
+
+setup() {
+    mkdir "${TMP_DIR}"
+    . $CMD > /dev/null
+}
+
+teardown() {
+    rm -rf "${TMP_DIR}"
+}
 
 # test log
-test_log_dumps_to_log_file_if_present() {
+
+@test "log dumps to log file if present" {
     # setup
-    LOG_FILE=/tmp/jacklog.log
+    LOG_FILE="${TMP_DIR}/jacklog.log"
     touch "${LOG_FILE}"
-    source_file
-    local msg="Here is a log message"
+    msg="Here is a log message"
 
     # execute
-    local output=$(log "${msg}")
-    local dump=$(cat ${LOG_FILE})
+    run log "${msg}" && cat "${LOG_FILE}"
 
     # assert
-    assert_re_match "${dump}" "${msg}"
-
-    # cleanup
-    rm -rf $LOG_FILE
-    unset LOG_FILE
+    assert_output_equals "${msg}"
 }
 
-test_log_if_LOG_FILE_not_set() {
+@test "log when LOG_FILE not set" {
     # setup
     unset LOG_FILE
-    source_file
-    local msg="Here is another log message"
+    msg="Here is another log message"
 
     # execute
-    local output=$(log "${msg}")
+    run log "${msg}"
 
     # assert
-    assert_re_match "${output}" "${msg}"
+    assert_output_matches "${msg}"
 }
 
-test_log_skips_log_file_if_missing() {
+@test "log skips log file if missing" {
     # setup
-    source_file
-    LOG_FILE=/tmp/jacklog2.log
-    rm -rf "${LOG_FILE}" > /dev/null
-    local msg="Still loggin here"
+    LOG_FILE="${TMP_DIR}/jacklog2.log"
+    msg="Still loggin here"
 
     # execute
-    local output=$(log "${msg}")
+    run log "${msg}"
 
     # assert
-    assert_re_match "${output}" "${msg}"
-
-    # cleanup
-    unset LOG_FILE
+    assert_output_matches "${msg}"
 }
 
-test_log_echos_message() {
+@test "log echos message" {
     # setup
-    source_file
-    local msg="Can you hear me now"
+    msg="Can you hear me now"
 
     # execute
-    local output=$(log "${msg}")
+    run log "${msg}"
 
     # assert
-    assert_re_match "${output}" "${msg}"
+    assert_output_equals "${msg}"
 }
 
-test_log_uses_INDENT() {
+@test "log uses INDENT" {
     # setup
-    source_file
     INDENT="              "
-    local msg="Can you hear me now"
+    msg="Can you hear me now"
 
     # execute
-    local output=$(log "${msg}")
+    run log "${msg}"
 
     # assert
-    assert_re_match "${output}" "${INDENT}${msg}"
-
-    # cleanup
-    unset INDENT
+    assert_output_equals "${INDENT}${msg}"
 }
 
 # not going to test yellow, red, green or blue
@@ -881,19 +877,9 @@ test_check_archive_file_verifies_file_when_file_missing() {
 # test_download_apache_file_when_download_fails
 # test_download_apache_file_when_download_succeeds
 
-# load file so we can execute functions
-source_file() {
-    # need to dump to /dev/null, or the output shows in the test
-    source "${FILE}" > /dev/null
-}
-
 stub_cleanup_from_abort_functions() {
     stub_function "stop_accumulo"
     stub_function "stop_zookeeper"
     stub_function "stop_hadoop"
     stub_function "move_log_file"
 }
-
-
-# load helper and then shunit2
-. test/helper.sh && . test/lib/shunit2-2.1.6/src/shunit2

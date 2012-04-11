@@ -3,6 +3,7 @@ load test_helper
 CMD="$BATS_TEST_DIRNAME/../bin/pre_install.sh"
 TMP_DIR="/tmp/ac-tes-install"
 DEBUG=true # comment this out if you don't want the extra info, only shows debug for failures
+any="[[:print:]]" # regex match of any printable character, use $any in the regex string
 
 setup() {
     mkdir "${TMP_DIR}"
@@ -197,7 +198,7 @@ test_function_called() {
 
     # assert
     assert_no_error
-    assert_output_matches "${output}" "Creating directory ${dir}"
+    assert_output_matches "Creating directory ${dir}"
 }
 
 @test "get_install_dir actually creates INSTALL_DIR" {
@@ -211,4 +212,169 @@ test_function_called() {
     # assert
     assert_no_error
     assert_output_matches "${INSTALL_DIR}"
+}
+
+# get_hdfs_dir tests
+
+@test "get_hdfs_dir fails if INSTALL_DIR not set" {
+    # execute
+    run get_hdfs_dir
+
+    # assert
+    assert_error
+    assert_output_matches "INSTALL_DIR is not set"
+}
+
+@test "get_hdfs_dir fails if INSTALL_DIR does not exist" {
+    # setup
+    INSTALL_DIR="${TMP_DIR}/inohere"
+    rm -rf "${INSTALL_DIR}" 2>&1 > /dev/null
+
+    # execute
+    run get_hdfs_dir
+
+    # assert
+    assert_error
+    assert_output_matches "Install dir ${INSTALL_DIR} does not exist"
+}
+
+@test "get_hdfs_dir sets HDFS_DIR" {
+    # setup
+    INSTALL_DIR="${TMP_DIR}/junk9"
+    mkdir "${INSTALL_DIR}"
+    eval "function light_blue() {
+        echo \${HDFS_DIR}
+    }"
+
+    # execute
+    run get_hdfs_dir
+
+    # assert
+    assert_no_error
+    assert_output_equals "${INSTALL_DIR}/hdfs"
+}
+
+@test "get_hdfs_dir says it made HDFS_DIR" {
+    # setup
+    INSTALL_DIR="${TMP_DIR}/junk5"
+    mkdir "${INSTALL_DIR}"
+
+    # execute
+    run get_hdfs_dir
+
+    # assert
+    assert_output_matches "Making HDFS directory ${INSTALL_DIR}/hdfs"
+}
+
+@test "get_hdfs_dir actually makes HDFS_DIR" {
+    # setup
+    INSTALL_DIR="${TMP_DIR}/junk5"
+    mkdir "${INSTALL_DIR}"
+
+    # execute
+    run get_hdfs_dir
+
+    # assert
+    assert_no_error
+    assert_directory_exists "${INSTALL_DIR}/hdfs"
+}
+
+# get_java_home tests
+
+@test "get_java_home with JAVA_HOME set to existing directory" {
+    # setup
+    tmp_dir="${TMP_DIR}/javahome1"
+    mkdir -p "${tmp_dir}"
+    JAVA_HOME="${tmp_dir}"
+
+    # execute
+    run get_java_home
+
+    # assert
+    assert_no_error
+    assert_output_matches "JAVA_HOME set to ${JAVA_HOME}"
+}
+
+@test "get_java_home with JAVA_HOME set to nonexistant directory" {
+    # setup
+    tmp_dir="${TMP_DIR}/javahome2"
+    JAVA_HOME="${tmp_dir}"
+
+    # execute
+    run get_java_home
+
+    # assert
+    assert_error
+    assert_output_matches "JAVA_HOME does not exist: ${JAVA_HOME}"
+}
+
+@test "get_java_home prompts when JAVA_HOME is missing and the input directory exists" {
+    # setup
+    unset JAVA_HOME
+    local dir="${TMP_DIR}/javajunk3"
+    stub_function "read_input" "${dir}"
+    mkdir "${dir}"
+
+    # execute
+    run get_java_home
+
+    # assert
+    assert_no_error
+    assert_output_matches "JAVA_HOME set to ${dir}"
+}
+
+@test "get_java_home prompts when JAVA_HOME is missing but the input directory does not exist" {
+    # setup
+    unset JAVA_HOME
+    dir="${TMP_DIR}javajunk4"
+    stub_function "read_input" "${dir}"
+
+    # execute
+    run get_java_home
+
+    # assert
+    assert_error
+    assert_output_matches "JAVA_HOME does not exist: ${dir}"
+}
+
+# check_ssh tests
+
+@test "check_ssh when host is wrong" {
+    # setup
+    fake_host="Cryme a river boys"
+    stub_function "_hostname" "${fake_host}"
+
+    # execute
+    run check_ssh
+
+    # assert
+    assert_error
+    assert_output_matches "Problem with SSH$any*Expected $fake_host, but got$any*$"
+}
+
+@test "check_ssh when ssh fails" {
+    # setup
+    fake_host="Girls just wanna have fun"
+    stub_function "_ssh" "" 255
+
+    # execute
+    run check_ssh
+
+    # assert
+    assert_error
+    assert_output_matches "Problem with SSH,$any* Expected $any*, but got .$any*$"
+}
+
+@test "check_ssh when it passes" {
+    # setup
+    local fake_host="host1"
+    stub_function "_hostname" "${fake_host}"
+    stub_function "_ssh" "${fake_host}"
+
+    # execute
+    run check_ssh
+
+    # assert
+    assert_no_error
+    assert_output_matches "SSH appears good"
 }

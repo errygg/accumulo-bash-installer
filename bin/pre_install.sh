@@ -93,7 +93,7 @@ check_ssh() {
     if [[ "${HOSTNAME}" == "${SSH_HOST}" ]]; then
         light_blue "SSH appears good"
     else
-        abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless"
+        abort "Problem with SSH, ran ssh -o 'PreferredAuthentications=publickey' localhost \"hostname\".  Expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless"
     fi
 }
 
