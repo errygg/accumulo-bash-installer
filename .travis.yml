@@ -1,3 +1,5 @@
 language: perl
 before_install:
   - git submodule update --init --recursive
+install: "echo No install, this is a bash project"
+script: "make test"
