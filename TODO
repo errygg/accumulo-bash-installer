@@ -23,6 +23,7 @@
 - Make a pretty github page
 - Publicize
 - Ensure install dir is writable
+- Maybe add tomdoc.sh https://github.com/mlafeldt/tomdoc.sh
 
 From steve
 - test for read/write on install directory and give a better message
