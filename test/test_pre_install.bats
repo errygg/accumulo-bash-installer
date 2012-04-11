@@ -343,6 +343,7 @@ test_function_called() {
     # setup
     fake_host="Cryme a river boys"
     stub_function "_hostname" "${fake_host}"
+    stub_function "_ssh" "stop cyring"
 
     # execute
     run check_ssh
