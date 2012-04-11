@@ -26,6 +26,7 @@ teardown() {
     run log "${msg}" && cat "${LOG_FILE}"
 
     # assert
+    assert_no_error
     assert_output_equals "${msg}"
 }
 
@@ -38,6 +39,7 @@ teardown() {
     run log "${msg}"
 
     # assert
+    assert_no_error
     assert_output_matches "${msg}"
 }
 
@@ -50,6 +52,7 @@ teardown() {
     run log "${msg}"
 
     # assert
+    assert_no_error
     assert_output_matches "${msg}"
 }
 
@@ -61,6 +64,7 @@ teardown() {
     run log "${msg}"
 
     # assert
+    assert_no_error
     assert_output_equals "${msg}"
 }
 
@@ -73,6 +77,7 @@ teardown() {
     run log "${msg}"
 
     # assert
+    assert_no_error
     assert_output_equals "${INDENT}${msg}"
 }
 
@@ -80,100 +85,87 @@ teardown() {
 
 # abort test
 
-test_abort_shows_Aborting() {
+@test "abort shows Aborting" {
     # setup
-    source_file
     eval "function red() {
       echo \"In red - \$1\"
     }"
 
     # execute
-    local output=$(abort 2>&1) #abort spits to stderr, so redirect here to capture
+    run abort
 
     # assert
-    assert_re_match "${output}" "In red - Aborting..."
+    assert_error
+    assert_output_matches "In red - Aborting..."
 }
 
-test_abort_shows_message() {
+@test "abort shows message" {
     # setup
-    source_file
-    local msg="why you stoppen me"
+    msg="why you stoppen me"
     eval "function red() {
       echo \"In red - \$1\"
     }"
 
     # execute
-    local output=$(abort "${msg}" 2>&1) #abort spits to stderr, so redirect here to capture
+    run abort "${msg}"
 
     # assert
-    assert_re_match "${output}" "In red - ${msg}"
+    assert_error
+    assert_output_matches "In red - ${msg}"
 }
 
-test_abort_calls_cleanup_from_abort() {
+@test "abort calls cleanup_from_abort" {
     # setup
-    source_file
-    local cleanup="Cleanup called"
+    cleanup="Cleanup called"
     eval "function cleanup_from_abort() {
         echo \"${cleanup}\"
     }"
 
     # execute
-    local output=$(abort 2>&1)
+    run abort
 
     # assert
-    assert_re_match "${output}" "${cleanup}"
-}
-
-test_abort_exits_with_1() {
-    # setup
-    source_file
-
-    # execute
-    (eval "abort") > /dev/null 2>&1
-    local exit_status=$?
-
-    # assert
-    assertEquals "Expect abort to exit with a 1" 1 $exit_status
+    assert_error
+    assert_output_matches "${cleanup}"
 }
 
 # read_input test
 
-test_read_input_fails_with_no_prompt() {
-    # setup
-    source_file
-
-    # execute
-    local output=$(read_input 2>&1)
-
-    # assert
-    assert_re_match "${output}" "Script requested user input without a prompt"
-}
-
-test_read_input_uses_INDENT_and_yellow_for_prompt() {
-    # not really a fan of testing 2 things at once, but this is too silly to break out
-    # setup
-    source_file
-    local prompt="What is your answer"
+@test "read_input fails with no prompt" {
+    # setup - shouldn't hit this, but just in case
     eval "function read() {
         echo \"PROMPT:\$1\$2\"
     }"
-    eval "function log() {
-        do_nothing=true
+
+    # execute
+    run read_input
+
+    # assert
+    assert_error
+    assert_output_matches "Script requested user input without a prompt"
+}
+
+@test "read_input uses INDENT and yellow for prompt" {
+    # not really a fan of testing 2 things at once, but this is too silly to break out
+    # setup
+    prompt="What is your answer"
+    eval "function read() {
+        echo \"\$@\"
     }"
+    stub_function "log"
     INDENT="          "
 
     # execute
-    local output=$(read_input "${prompt}")
+    run read_input "${prompt}"
 
     # assert
-    assert_re_match "${output}" "PROMPT:-p${_yellow}${INDENT}${prompt}:${normal}"
+    assert_no_error
+    assert_output_equals "-p ${_yellow}${INDENT}${prompt}:${_normal}  -e"
 }
 
-test_read_input_grabs_user_input() {
+@test "read_input grabs user input" {
     # setup
-    source_file
-    local prompt="What is your answer"
-    local retVal="Mike"
+    retVal="My answer is true"
     eval "function read() {
         REPLY=\"${retVal}\"
     }"
@@ -182,31 +174,29 @@ test_read_input_grabs_user_input() {
     }"
 
     # execute
-    local output=$(read_input "${prompt}")
+    run read_input "Some prompt"
 
     # assert
-    assertEquals "${retVal}" "${output}"
+    assert_no_error
+    assert_output_equals "${retVal}"
 }
 
-test_read_input_call_log_with_prompt_and_reply() {
+@test "read_input calls log with prompt and reply" {
     # setup
-    source_file
-    unset LOG_FILE
-    local prompt="No log file"
-    local retVal="nologhere"
+    prompt="No log file"
+    retVal="nologhere"
     eval "function read() {
         REPLY=\"${retVal}\"
     }"
-    local logged=""
     eval "function log() {
-        logged=\"\$1\"
+        echo \"\$1\"
     } "
 
     # execute
-    read_input "${prompt}" > /dev/null
+    run read_input "${prompt}"
 
     # assert
-    assertEquals "User entered (${prompt}: ${retVal})" "${logged}"
+    assert_output_matches "User entered \(${prompt}: ${retVal}\)"
 }
 
 # check_curl
