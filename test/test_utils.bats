@@ -338,92 +338,82 @@ test_function_called() {
     test_function_called "move_log_file"
 }
 
-# TODO: test this for zookeeper and accumulo
+# TODO: update these tests for zookeeper and accumulo
+# once they are installed and running so I can get the correct
+# string to check for
+
 # test check java process
 
-test_check_java_process_for_Hadoop_running() {
+@test "check_java_process when Hadoop running" {
     # setup
-    source_file
-    eval "function _jps() {
-        return 0
-    }"
+    stub_function "_jps"
 
     # execute
-    local output=$(check_java_process "NameNode")
+    run check_java_process "NameNode"
 
     # assert
-    assertEquals "Hadoop running" "${output}"
+    assert_output_equals "Hadoop running"
 }
 
-test_check_java_process_for_Hadoop_not_running() {
+@test "check_java_process when Hadoop not running" {
     # setup
-    source_file
     eval "function _jps() {
         return 1
     }"
 
     # execute
-    local output=$(check_java_process "NameNode")
+    run check_java_process "NameNode"
 
     # assert
-    assertEquals "Hadoop not running" "${output}"
+    assert_output_equals "Hadoop not running"
 }
 
-test_check_java_process_for_Zookeeper_running() {
+@test "check_java_process when Zookeeper running" {
     # setup
-    source_file
-    eval "function _jps() {
-        return 0
-    }"
+    stub_function "_jps"
 
     # execute
-    local output=$(check_java_process "zookeeper")
+    run check_java_process "zookeeper"
 
     # assert
-    assertEquals "Zookeeper running" "${output}"
-
+    assert_output_equals "Zookeeper running"
 }
 
-test_check_java_process_for_Zookeeper_not_running() {
+@test "check_java_process when Zookeeper not running" {
     # setup
-    source_file
     eval "function _jps() {
         return 1
     }"
 
     # execute
-    local output=$(check_java_process "zookeeper")
+    run check_java_process "zookeeper"
 
     # assert
-    assertEquals "Zookeeper not running" "${output}"
+    assert_output_equals "Zookeeper not running"
 }
 
-test_check_java_process_for_Accumulo_running() {
+@test "check_java_process when Accumulo running" {
     # setup
-    source_file
-    eval "function _jps() {
-        return 0
-    }"
+    stub_function "_jps"
 
     # execute
-    local output=$(check_java_process "accumulo")
+    run check_java_process "accumulo"
 
     # assert
-    assertEquals "Accumulo running" "${output}"
+    assert_output_equals "Accumulo running"
 }
 
-test_check_java_process_for_Accumulo_not_running() {
+@test "check_java_process when Accumulo not running" {
     # setup
-    source_file
     eval "function _jps() {
         return 1
     }"
 
     # execute
-    local output=$(check_java_process "accumulo")
+    run check_java_process "accumulo"
 
     # assert
-    assertEquals "${output}" "Accumulo not running"
+    assert_output_equals "Accumulo not running"
 }
 
 test_check_java_process_for_Unknown_abort() {
