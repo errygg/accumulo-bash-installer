@@ -196,196 +196,146 @@ teardown() {
     run read_input "${prompt}"
 
     # assert
+    assert_no_error
     assert_output_matches "User entered \(${prompt}: ${retVal}\)"
 }
 
 # check_curl
 
-test_check_curl_when_CURL_set() {
+@test "check_curl uses CURL if set" {
     # setup
-    source_file
-    local var="/path/to/curl"
+    var="/path/to/curl"
     CURL="${var}"
+    stub_function "_which_curl" "should not get here" 1
 
     # execute
-    check_curl
+    run check_curl
 
     # assert
-    assertEquals "${var}" "${CURL}"
-
-    # cleanup
-    unset CURL
+    assert_no_error
+    assert_equals "${var}" "$CURL"
 }
 
-test_check_curl_when_no_CURL_and_no_executable() {
+@test "check_curl when CURL empty and curl not installed" {
     # setup
-    source_file
-    unset CURL
-    local check_abort="abort called"
-    eval "function _which_curl() {
-       return 1
-    }"
-    eval "function abort() {
-       echo \"${check_abort}\"
-    }"
+    stub_function "_which_curl" "curl1" 1
 
     # execute
-    local output=$(check_curl)
+    run check_curl
 
     # assert
-    assert_re_match "${output}" "${check_abort}"
-
-    # cleanup
-    unset CURL
+    assert_error
+    assert_output_matches "Could not find curl on your path"
 }
 
-test_check_curl_when_no_CURL_and_executable() {
+@test "check_curl when CURL empty and curl installed" {
     # setup
-    source_file
     unset CURL
-    local curl_path="/curl/lives/here"
-    eval "function _which_curl() {
-       echo \"${curl_path}\"
-    }"
-
-    # execute
+    curl_path="/curl/lives/here"
+    stub_function "_which_curl" "${curl_path}"
     check_curl
 
-    # assert
-    assertEquals "${curl_path}" "${CURL}"
+    # execute
+    run echo "${CURL}"
 
-    # cleanup
-    unset CURL
+    # assert
+    assert_no_error
+    assert_output_equals "${curl_path}"
 }
 
 # check_gpg
 
-test_check_gpg_when_GPG_set() {
+@test "check_gpg used GPG if set" {
     # setup
-    source_file
-    local var="/path/to/gpg"
+    var="/path/to/gpg"
     GPG="${var}"
 
     # execute
-    check_gpg
+    run check_gpg
 
     # assert
-    assertEquals "${var}" "${GPG}"
-
-    # cleanup
-    unset GPG
+    assert_equals "${var}" "${GPG}"
 }
 
-test_check_gpg_when_no_GPG_and_no_executable() {
+@test "check_gpg when GPG empty and gpg not installed" {
     # setup
-    source_file
-    unset GPG
-    local check_abort="abort called"
-    eval "function _which_gpg() {
-       return 1
-    }"
-    eval "function abort() {
-       echo \"${check_abort}\"
-    }"
+    stub_function "_which_gpg" "curl1" 1
 
     # execute
-    local output=$(check_gpg)
+    run check_gpg
 
     # assert
-    assert_re_match "${output}" "${check_abort}"
-
-    # cleanup
-    unset GPG
+    assert_error
+    assert_output_matches "Could not find gpg on your path"
 }
 
-test_check_gpg_when_no_GPG_and_executable() {
+@test "check_gpg when GPG empty and gpg installed" {
     # setup
-    source_file
-    unset GPG
-    local gpg_path="/gpg/lives/here"
-    eval "function _which_gpg() {
-       echo \"${gpg_path}\"
-    }"
-
-    # execute
+    gpg_path="/gpg/lives/here"
+    stub_function "_which_gpg" "${gpg_path}"
     check_gpg
 
-    # assert
-    assertEquals "${gpg_path}" "${GPG}"
+    # execute
+    run echo "${GPG}"
 
-    # cleanup
-    unset GPG
+    # assert
+    assert_no_error
+    assert_output_equals "${gpg_path}"
 }
 
 
 # test cleanup_from_abort
+stub_cleanup_from_abort_functions() {
+     stub_function "stop_accumulo"
+     stub_function "stop_zookeeper"
+     stub_function "stop_hadoop"
+     stub_function "move_log_file"
+}
 
-test_cleanup_from_abort_with_NO_RUN() {
+
+@test "cleanup_from_abort with NO_RUN" {
     # setup
-    source_file && stub_cleanup_from_abort_functions
+    stub_cleanup_from_abort_functions
     NO_RUN=1
 
     # execute
-    local output=$(cleanup_from_abort)
+    run cleanup_from_abort
 
     # assert
-    assertEquals "" "${output}"
-
-    # cleanup
-    unset NO_RUN
-
+    assert_no_error
+    assert_output_equals ""
 }
 
-test_cleanup_from_abort_calls_stop_accumulo() {
-    # setup
-    source_file && stub_cleanup_from_abort_functions
-    local msg="Accumulo stopped ...."
-    stub_function "stop_accumulo" "${msg}"
+test_function_called() {
+     fname=$1
+     # setup
+     stub_cleanup_from_abort_functions
+     msg="$fname called"
+     stub_function "$fname" "${msg}" 0
 
-    # execute
-    local output=$(cleanup_from_abort)
+     # execute
+     run cleanup_from_abort
 
-    # assert
-    assert_re_match "${output}" "${msg}"
+     # assert
+     assert_no_error
+     assert_output_matches "${msg}"
 }
 
-test_cleanup_from_abort_calls_stop_zookeeper() {
-    # setup
-    source_file && stub_cleanup_from_abort_functions
-    local msg="Zookeeper stopped ...."
-    stub_function "stop_zookeeper" "${msg}"
 
-    # execute
-    local output=$(cleanup_from_abort)
-
-    # assert
-    assert_re_match "${output}" "${msg}"
+@test "cleanup_from_abort calls stop_accumulo" {
+    test_function_called "stop_accumulo"
 }
 
-test_cleanup_from_abort_calls_stop_hadoop() {
-    # setup
-    source_file && stub_cleanup_from_abort_functions
-    local msg="hadoop stopped ...."
-    stub_function "stop_hadoop" "${msg}"
-
-    # execute
-    local output=$(cleanup_from_abort)
-
-    # assert
-    assert_re_match "${output}" "${msg}"
+@test "cleanup_from_abort calls stop_zookeeper" {
+    test_function_called "stop_zookeeper"
 }
 
-test_cleanup_from_abort_calls_move_log_file() {
-    # setup
-    source_file && stub_cleanup_from_abort_functions
-    local msg="Logs moved yo"
-    stub_function "move_log_file" "${msg}"
+@test "cleanup_from_abort calls stop_hadoop" {
+    test_function_called "stop_hadoop"
+}
 
-    # execute
-    local output=$(cleanup_from_abort)
-
-    # assert
-    assert_re_match "${output}" "${msg}"
+@test "cleanup_from_abort calls move_log_file" {
+    test_function_called "move_log_file"
 }
 
 # TODO: test this for zookeeper and accumulo
@@ -867,9 +817,3 @@ test_check_archive_file_verifies_file_when_file_missing() {
 # test_download_apache_file_when_download_fails
 # test_download_apache_file_when_download_succeeds
 
-stub_cleanup_from_abort_functions() {
-    stub_function "stop_accumulo"
-    stub_function "stop_zookeeper"
-    stub_function "stop_hadoop"
-    stub_function "move_log_file"
-}

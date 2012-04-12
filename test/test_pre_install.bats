@@ -41,7 +41,7 @@ test_function_called() {
      fname=$1
      # setup
      local msg="$fname called"
-     stub_function "$fname" "${msg}" 1
+     stub_function "$fname" "${msg}" 0
 
      # execute
      run pre_install

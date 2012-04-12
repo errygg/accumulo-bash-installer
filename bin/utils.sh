@@ -73,13 +73,13 @@ _which_gpg() {
 }
 
 check_curl() {
-    if [ -z $CURL ]; then
+    if [ -z "$CURL" ]; then
         CURL=$(_which_curl) || abort "Could not find curl on your path"
     fi
 }
 
 check_gpg() {
-    if [ -z $GPG ]; then
+    if [ -z "$GPG" ]; then
         GPG=$(_which_gpg) || abort "Could not find gpg on your path"
     fi
 }

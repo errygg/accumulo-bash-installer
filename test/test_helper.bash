@@ -17,11 +17,11 @@ if [ "${HELPER_LOADED}" != true ]; then
     stub_function() {
         local fname=$1
         local msg=$2
-        local exitnow=$3
-        if [ "x${exitnow}" != "x" ]; then
+        local exit_code=$3
+        if [ "x${exit_code}" != "x" ]; then
             eval "function ${fname}() {
             echo \"${msg}\"
-            exit 0;
+            exit ${exit_code};
         }"
         else
             eval "function ${fname}() {
@@ -64,6 +64,17 @@ if [ "${HELPER_LOADED}" != true ]; then
             echo "String: ${expected}"
         fi
         [ "${output}" == "${expected}" ]
+    }
+
+    assert_equals() {
+        local expected=$1
+        local value=$2
+        if [ ! -z "$DEBUG" ]; then
+            echo "Expected value to equal string"
+            echo "Value: ${value}"
+            echo "String: ${expected}"
+        fi
+        [ "${value}" == "${expected}" ]
     }
 
     assert_no_error() {

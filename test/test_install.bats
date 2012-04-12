@@ -16,12 +16,13 @@ test_function_called() {
      fname=$1
      # setup
      local msg="$fname called"
-     stub_function "$fname" "${msg}" 1
+     stub_function "$fname" "${msg}" 0
 
      # execute
      run install
 
      # assert
+     assert_no_error
      assert_output_matches "${msg}"
 }
 
