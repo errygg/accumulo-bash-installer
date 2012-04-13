@@ -43,19 +43,20 @@ set_archive_dir() {
 usage () {
   # TODO: add options here.  Make passed in options override -f options
     cat <<-EOF
-  Usage:  ./install-accumulo.sh [options]
+  Usage:  ./$(basename $0) [options]
 
   Description: Installs Hadoop, Zookeeper and Accumulo in one directory
                and configures them for local development.  A log file is
-               stored in ${ARCHIVE_DIR}
-               if you want to review the install
+               created and the location is displayed if you want to review
+               the install
 
   Options:
 
     -h                  display this message
     -f <config_file>    load configs from instead of prompting
     -d, --directory     sets install directory, must not exist
-    -a, --archive-dir   sets the archive directory
+    -a, --archive-dir   sets the archive directory, defaults to
+                        ${ARCHIVE_DIR}
 
 EOF
 }
