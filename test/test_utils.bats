@@ -690,93 +690,81 @@ test_function_called() {
 
 # test check_archive_file
 
-test_check_archive_file_when_no_FILE_SRC() {
+@test "check_archive_file with one arg fails" {
     # setup
-    source_file
 
     # execute
-    local output=$(check_archive_file "dest" 2>&1)
+    run check_archive_file "dest"
 
     # assert
-    assert_re_match "${output}" "You must pass in both FILE_DEST and FILE_SRC"
+    assert_output_matches "You must pass in both FILE_DEST and FILE_SRC"
 }
 
-test_check_archive_file_when_no_FILE_DEST_or_FILE_SRC() {
+@test "check_archive_file with no args" {
     # setup
-    source_file
 
     # execute
-    local output=$(check_archive_file 2>&1)
+    run check_archive_file
 
     # assert
-    assert_re_match "${output}" "You must pass in both FILE_DEST and FILE_SRC"
+    assert_output_matches "You must pass in both FILE_DEST and FILE_SRC"
 }
 
 
-test_check_archive_file_when_file_exists() {
+@test "check_archive_file when destination file exists" {
     # setup
-    source_file
-    FILE_DEST=/tmp/blah
-    touch ${FILE_DEST}
+    FILE_DEST=/tmp/blah && touch ${FILE_DEST}
 
     # execute
-    local output=$(check_archive_file ${FILE_DEST} "blah")
+    run check_archive_file ${FILE_DEST} "blah"
 
     # assert
-    assert_re_match "${output}" "Using existing file ${FILE_DEST}"
-
-    # cleanup
-    rm ${FILE_DEST}
-    unset FILE_DEST
+    assert_output_matches "Using existing file ${FILE_DEST}"
 }
 
-test_check_archive_file_downloads_file_and_sig_when_file_missing() {
+@test "check_archive_file downloads file and sig when file missing in dest" {
     # setup
-    source_file
     FILE_SRC="http://blah.com/blah.file"
-    FILE_DEST=/tmp/blah
-    rm -rf ${FILE_DEST} 2>&1 > /dev/null
+    FILE_DEST="${TMP_DIR}/blah" && rm -rf ${FILE_DEST}
     eval "function download_apache_file() {
         echo \"Downloading \$2 to \$1\"
     }"
-    eval "function verify_apache_file() {
-        echo Calling verify
-    }"
+    stub_function "verify_apache_file" "Calling verify"
 
     # execute
-    local output=$(check_archive_file ${FILE_DEST} ${FILE_SRC})
+    run check_archive_file ${FILE_DEST} ${FILE_SRC}
 
     # assert
-    assert_re_match "${output}" "Downloading ${FILE_SRC} to ${FILE_DEST}"
-    assert_re_match "${output}" "Downloading ${FILE_SRC}.asc to ${FILE_DEST}.asc"
-
-    # cleanup
-    unset FILE_DEST
-    unset FILE_SRC
+    assert_output_matches "Downloading ${FILE_SRC} to ${FILE_DEST}"
+    assert_output_matches "Downloading ${FILE_SRC}.asc to ${FILE_DEST}.asc"
 }
 
-test_check_archive_file_verifies_file_when_file_missing() {
+@test_check_archive_file_verifies_file_when_file_missing() {
     # setup
-    source_file
-    FILE_SRC="http://blah.com/blah.file"
-    FILE_DEST=/tmp/blah
-    rm -rf ${FILE_DEST} 2>&1 > /dev/null
-    eval "function download_apache_file() {
-        echo Downloading
-    }"
+    FILE_SRC="http://blah2.com/blah2.file"
+    FILE_DEST="${TMP_DIR}/blah2" && rm -rf ${FILE_DEST}
+    stub_funciton "download_apache_file" "Downloading file"
     eval "function verify_apache_file() {
         echo Verifying \$1 with \$2
     }"
 
     # execute
-    local output=$(check_archive_file ${FILE_DEST} ${FILE_SRC})
+    run check_archive_file ${FILE_DEST} ${FILE_SRC}
 
     # assert
-    assert_re_match "${output}" "Verifying ${FILE_DEST} with ${FILE_DEST}.asc"
+    assert_output_matches "Verifying ${FILE_DEST} with ${FILE_DEST}.asc"
+}
 
-    # cleanup
-    unset FILE_DEST
-    unset FILE_SRC
+@test "check_archive_file when download of file fails" {
+    a=1
+}
+
+@test "check_archive_file when download of sig fails" {
+    a=1
+}
+
+@test "check_archive_file when verify fails" {
+    a=1
 }
 
 # test download_apache_file
