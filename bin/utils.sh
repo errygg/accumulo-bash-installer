@@ -189,7 +189,7 @@ sys() {
     # execute a system command, tee'ing the results to the log file
     ORIG_INDENT="${INDENT}" && INDENT=""
     log "---------------------system command output-----------------------"
-    if [ -e "$LOG_FILE" ]; then
+    if [ -f "$LOG_FILE" ]; then
         ${CMD} 2>&1 | _tee "$LOG_FILE"
     else
         ${CMD} 2>&1

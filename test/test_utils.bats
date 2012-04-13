@@ -601,7 +601,7 @@ test_function_called() {
     assert_output_matches "${contents}"
 }
 
-@test "move_log_file when LOG_FILE exists but INSTALL_DIR does not" {
+@test "move_log_file when LOG_FILE variable set but INSTALL_DIR does not exist" {
     # setup
     INSTALL_DIR="${TMP_DIR}/install1" &&  rm -rf  "${INSTALL_DIR}"
     LOG_FILE="${TMP_DIR}logfile1" && touch "${LOG_FILE}"
@@ -628,45 +628,64 @@ test_function_called() {
 
 # test sys
 
-test_sys_when_no_LOG_FILE() {
+@test "sys doesn't dump to log if LOG_FILE variable doesn't exist" {
     # setup
-    source_file
-    local cmd="uname"
-    local result=$(${cmd})
-    unset LOG_FILE
-    local bad_stuff="You should not be here"
-    eval "function _tee() {
-        echo \"${bad_stuff}\"
-    }"
+    cmd="uname"
+    bad_msg="You should not see me"
+    stub_function "_tee" "${bad_msg}" 1
 
     # execute
-    local output=$(sys "${cmd}")
+    run sys "${cmd}"
 
     # assert
-    assert_re_match "${output}" "Running system command '${cmd}'"
-    assert_re_match "${output}" "${result}"
-    assert_no_re_match "${output}" "${bad_stuff}"
+    assert_no_error
+    assert_output_matches  "$(${cmd})"
+    assert_output_does_not_match "${bad_msg}"
 }
 
-test_sys_with_LOG_FILE() {
+@test "sys doesn't dump to log if LOG_FILE variable exists but file does not" {
     # setup
-    source_file
-    local cmd="hostname"
-    local result=$(${cmd})
-    LOG_FILE=/tmp/logfile3
-    touch "${LOG_FILE}"
+    LOG_FILE="${TMP_DIR}/notcreated" && rm -rf "${LOG_FILE}"
+    cmd="whoami"
+    stub_function "log" "log function" # light_blue and log create the file
+    bad_msg="You still should not see me"
+    stub_function "_tee" "${bad_msg}" 1
 
     # execute
-    local output=$(sys "${cmd}")
+    run sys "${cmd}"
 
     # assert
-    assert_re_match "${output}" "Running system command '${cmd}'"
-    assert_re_match "${output}" "${result}"
-    assert_re_match "$(cat $LOG_FILE)" "${result}"
+    assert_no_error
+    assert_output_matches  "$(${cmd})"
+    assert_output_does_not_match "${bad_msg}"
+}
 
-    # cleanup
-    rm -rf "${LOG_FILE}"
-    unset LOG_FILE
+@test "sys with LOG_FILE displays correctly" {
+    # setup
+    LOG_FILE="${TMP_DIR}/logfile3" && touch "${LOG_FILE}"
+    cmd="hostname"
+
+    # execute
+    run sys "${cmd}"
+
+    # assert
+    assert_no_error
+    assert_output_matches "Running system command '${cmd}'"
+    assert_output_matches "$(${cmd})"
+}
+
+@test "sys with LOG_FILE dumps to log" {
+    # setup
+    LOG_FILE="${TMP_DIR}/logfile4" && touch "${LOG_FILE}"
+    cmd="pwd"
+    sys "${cmd}"
+
+    # execute
+    run cat "$LOG_FILE"
+
+    # assert
+    assert_no_error
+    assert_output_matches "$(${cmd})"
 }
 
 # test check_archive_file
