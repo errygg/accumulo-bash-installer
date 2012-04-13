@@ -26,22 +26,22 @@ test_function_called() {
      assert_output_matches "${msg}"
 }
 
-@test "test install calls pre_install" {
+@test "install calls pre_install" {
     test_function_called "pre_install"
 }
 
-@test "test install calls install_hadoop" {
+@test "install calls install_hadoop" {
     test_function_called "install_hadoop"
 }
 
-@test "test install calls install_zookeeper" {
+@test "install calls install_zookeeper" {
     test_function_called "install_zookeeper"
 }
 
-@test "test install calls install_accumulo" {
+@test "install calls install_accumulo" {
     test_function_called "install_accumulo"
 }
 
-@test "test install calls post_install" {
+@test "install calls post_install" {
     test_function_called "post_install"
 }
