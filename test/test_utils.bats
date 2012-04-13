@@ -352,6 +352,7 @@ test_function_called() {
     run check_java_process "NameNode"
 
     # assert
+    assert_no_error
     assert_output_equals "Hadoop running"
 }
 
@@ -365,6 +366,7 @@ test_function_called() {
     run check_java_process "NameNode"
 
     # assert
+    assert_no_error
     assert_output_equals "Hadoop not running"
 }
 
@@ -376,6 +378,7 @@ test_function_called() {
     run check_java_process "zookeeper"
 
     # assert
+    assert_no_error
     assert_output_equals "Zookeeper running"
 }
 
@@ -389,6 +392,7 @@ test_function_called() {
     run check_java_process "zookeeper"
 
     # assert
+    assert_no_error
     assert_output_equals "Zookeeper not running"
 }
 
@@ -400,6 +404,7 @@ test_function_called() {
     run check_java_process "accumulo"
 
     # assert
+    assert_no_error
     assert_output_equals "Accumulo running"
 }
 
@@ -413,256 +418,212 @@ test_function_called() {
     run check_java_process "accumulo"
 
     # assert
+    assert_no_error
     assert_output_equals "Accumulo not running"
 }
 
-test_check_java_process_for_Unknown_abort() {
+@test "check_java_process for Unknown aborts" {
     # setup
-    source_file
-    eval "function abort() {
-        echo \"Abort called\"
-    }"
+    abort_msg="Abort called"
+    stub_function "abort" "${abort_msg}" 1
 
     # execute
-    local output=$(check_java_process "whatthis")
+    run check_java_process "whatthis"
 
     # assert
-    assert_re_match "${output}" "Abort called"
+    assert_error
+    assert_output_equals "${abort_msg}"
 
 }
-
 
 # test stop_accumulo
 
-test_stop_accumulo_when_accumulo_not_running() {
+@test "stop_accumulo when accumulo not running" {
     # setup
-    source_file
-    eval "function check_java_process() {
-      echo \"Accumulo not running\"
-    }"
+    stub_function "check_java_process" "Accumulo not running"
 
     # execute
-    local output=$(stop_accumulo)
+    run stop_accumulo
 
     # assert
-    assert_re_match "${output}" "Accumulo not running, nothing to stop"
+    assert_no_error
+    assert_output_matches "Accumulo not running, nothing to stop"
 }
 
 
-test_stop_accumulo_when_accumulo_running_but_ACCUMULO_HOME_wrong() {
+@test "stop_accumulo when accumulo running but ACCUMULO_HOME wrong" {
     # setup
-    source_file
-    ACCUMULO_HOME="/tmp/fakeaccumulo"
-    rm -rf "${ACCUMULO_HOME}" > /dev/null
-    eval "function check_java_process() {
-      echo \"Accumulo running\"
-    }"
+    ACCUMULO_HOME="/tmp/fakeaccumulo" && rm -rf "${ACCUMULO_HOME}" > /dev/null
+    stub_function "check_java_process" "Accumulo running"
 
     # execute
-    local output=$(stop_accumulo)
+    run stop_accumulo
 
     # assert
-    assert_re_match "${output}" "Directory ${ACCUMULO_HOME} not found, can't shut it down"
-
-    # cleanup
-    unset ACCUMULO_HOME
+    assert_no_error
+    assert_output_matches "Directory ${ACCUMULO_HOME} not found, can't shut it down"
 }
 
-test_stop_accumulo_when_accumulo_running_and_ACCUMULO_HOME() {
+@test "stop_accumulo when accumulo running and ACCUMULO_HOME exists" {
     # setup
-    source_file
-    ACCUMULO_HOME="/tmp/fakeaccumulo2"
-    mkdir "${ACCUMULO_HOME}"
-    eval "function check_java_process() {
-      echo \"Accumulo running\"
-    }"
+    ACCUMULO_HOME="${TMP_DIR}/fakeaccumulo2" && mkdir "${ACCUMULO_HOME}"
+    stub_function "check_java_process" "Accumulo running"
     eval "function sys() {
       echo \"Running command: \$1\"
     }"
 
     # execute
-    local output=$(stop_accumulo)
+    run stop_accumulo
 
     # assert
-    assert_re_match "${output}" "Running command: ${ACCUMULO_HOME}/bin/stop-all.sh"
-
-    # cleanup
-    rm -rf "${ACCUMULO_HOME}" > /dev/null
-    unset ACCUMULO_HOME
+    assert_no_error
+    assert_output_matches "Running command: ${ACCUMULO_HOME}/bin/stop-all.sh"
 }
 
 # test stop zookeeper
 
-test_stop_zookeeper_when_zookeeper_not_running() {
+@test "stop_zookeeper when zookeeper not running" {
     # setup
-    source_file
-    eval "function check_java_process() {
-      echo \"Zookeeper not running\"
-    }"
+    stub_function "check_java_process" "Zookeeper not running"
 
     # execute
-    local output=$(stop_zookeeper)
+    run stop_zookeeper
 
     # assert
-    assert_re_match "${output}" "Zookeeper not running, nothing to stop"
+    assert_no_error
+    assert_output_matches "Zookeeper not running, nothing to stop"
 }
 
 
-test_stop_zookeeper_when_zookeeper_running_but_ZOOKEEPER_HOME_wrong() {
+@test "stop_zookeeper when zookeeper running but ZOOKEEPER_HOME wrong" {
     # setup
-    source_file
-    ZOOKEEPEER_HOME="/tmp/fakezookeeper"
-    rm -rf "${ZOOKEEPER_HOME}" > /dev/null
-    eval "function check_java_process() {
-      echo \"Zookeeper running\"
-    }"
+    ZOOKEEPER_HOME="/tmp/fakezookeeper" && rm -rf "${ZOOKEEPER_HOME}" > /dev/null
+    stub_function "check_java_process" "Zookeeper running"
 
     # execute
-    local output=$(stop_zookeeper)
+    run stop_zookeeper
 
     # assert
-    assert_re_match "${output}" "Directory ${ZOOKEEPER_HOME} not found, can't shut it down"
-
-    # cleanup
-    unset ZOOKEEPER_HOME
+    assert_no_error
+    assert_output_matches "Directory ${ZOOKEEPER_HOME} not found, can't shut it down"
 }
 
-test_stop_zookeeper_when_zookeeper_running_and_ZOOKEEPER_HOME() {
+@test "stop_zookeeper when zookeeper running and ZOOKEEPER_HOME exists" {
     # setup
-    source_file
-    ZOOKEEPER_HOME="/tmp/fakezoo2"
-    mkdir "${ZOOKEEPER_HOME}"
-    eval "function check_java_process() {
-      echo \"Zookeeper running\"
-    }"
+    ZOOKEEPER_HOME="${TMP_DIR}/fakezookeeper" && mkdir "${ZOOKEEPER_HOME}"
+    stub_function "check_java_process" "Zookeeper running"
     eval "function sys() {
       echo \"Running command: \$1\"
     }"
 
     # execute
-    local output=$(stop_zookeeper)
+    run stop_zookeeper
 
     # assert
-    assert_re_match "${output}" "Running command: ${ZOOKEEPER_HOME}/bin/zkStop.sh"
-
-    # cleanup
-    rm -rf "${ZOOKEEPER_HOME}" > /dev/null
-    unset ZOOKEEPER_HOME
+    assert_no_error
+    assert_output_matches "Running command: ${ZOOKEEPER_HOME}/bin/zkStop.sh"
 }
 
 
 # test stop hadoop
 
-test_stop_hadoop_when_hadoop_not_running() {
+@test "stop_hadoop when hadoop not running" {
     # setup
-    source_file
-    eval "function check_java_process() {
-      echo \"Hadoop not running\"
-    }"
+    stub_function "check_java_process" "Hadoop not running"
 
     # execute
-    local output=$(stop_hadoop)
+    run stop_hadoop
 
     # assert
-    assert_re_match "${output}" "Hadoop not running, nothing to stop"
+    assert_output_matches "Hadoop not running, nothing to stop"
 }
 
 
-test_stop_hadoop_when_hadoop_running_but_HADOOP_HOME_wrong() {
+@test "stop_hadoop when hadoop running but HADOOP_HOME wrong" {
     # setup
-    source_file
-    HADOOP_HOME="/tmp/fakehadoop"
-    rm -rf "${HADOOP_HOME}" > /dev/null
-    eval "function check_java_process() {
-      echo \"Hadoop running\"
-    }"
+    HADOOP_HOME="/tmp/fakehadoop" && rm -rf "${HADOOP_HOME}" > /dev/null
+    stub_function "check_java_process" "Hadoop running"
 
     # execute
-    local output=$(stop_hadoop)
+    run stop_hadoop
 
     # assert
-    assert_re_match "${output}" "Directory ${HADOOP_HOME} not found, can't shut it down"
-
-    # cleanup
-    unset HADOOP_HOME
+    assert_no_error
+    assert_output_matches "Directory ${HADOOP_HOME} not found, can't shut it down"
 }
 
-test_stop_hadoop_when_hadoop_running_and_HADOOP_HOME() {
+@test "stop_hadoop when hadoop running and HADOOP_HOME exists" {
     # setup
-    source_file
-    HADOOP_HOME="/tmp/fakehadoop2"
-    mkdir "${HADOOP_HOME}"
-    eval "function check_java_process() {
-      echo \"Hadoop running\"
-    }"
+    HADOOP_HOME="${TMP_DIR}/fakehadoop2" && mkdir "${HADOOP_HOME}"
+    stub_function "check_java_process" "Hadoop running"
     eval "function sys() {
       echo \"Running command: \$1\"
     }"
 
     # execute
-    local output=$(stop_hadoop)
+    run stop_hadoop
 
     # assert
-    assert_re_match "${output}" "Running command: ${HADOOP_HOME}/bin/stop-all.sh"
-
-    # cleanup
-    rm -rf "${HADOOP_HOME}" > /dev/null
-    unset HADOOP_HOME
+    assert_no_error
+    assert_output_matches "Running command: ${HADOOP_HOME}/bin/stop-all.sh"
 }
 
 # test move log file
 
-test_move_log_file_when_INSTALL_DIR_and_LOG_FILE() {
+@test "move_log_file message when INSTALL_DIR and LOG_FILE exist" {
     # setup
-    source_file
-    INSTALL_DIR=/tmp/install1
-    mkdir "${INSTALL_DIR}"
-    LOG_FILE=/tmp/logfile1
-    touch "${LOG_FILE}"
-    local contents="asdfasd4fewefwef"
-    echo "${contents}" > "${LOG_FILE}"
-    local NEW_LOG_FILE="${INSTALL_DIR}/$(basename $LOG_FILE)"
+    INSTALL_DIR="${TMP_DIR}/install1" && mkdir "${INSTALL_DIR}"
+    LOG_FILE="${TMP_DIR}/logfile1" && touch "${LOG_FILE}"
+    MOVED_LOG_FILE="${INSTALL_DIR}/$(basename $LOG_FILE)"
 
     # execute
-    local output=$(move_log_file)
-    local moved_contents=$(cat "${NEW_LOG_FILE}")
+    run move_log_file
 
     # assert
-    assert_re_match "${output}" "Review the log file in ${INSTALL_DIR}"
-    assert_re_match "${output}" "less -R ${NEW_LOG_FILE}"
-    assert_re_match "${moved_contents}" "${contents}"
-
-    # cleanup
-    if [ -e "$LOG_FILE" ]; then
-        rm "${LOG_FILE}"
-    fi
-    rm -rf "${INSTALL_DIR}" > /dev/null
-    unset LOG_FILE
-    unset INSTALL_DIR
-    unset NEW_LOG_FILE
+    assert_no_error
+    assert_output_matches "Review the log file in ${INSTALL_DIR}"
+    assert_output_matches "less -R ${MOVED_LOG_FILE}"
 }
 
-test_move_log_file_when_no_INSTALL_DIR_and_LOG_FILE() {
+@test "move_log_file actually moves file when INSTALL_DIR and LOG_FILE exist" {
     # setup
-    source_file
-    INSTALL_DIR=/tmp/install1
-    rm -rf  "${INSTALL_DIR}" > /dev/null
-    LOG_FILE=/tmp/logfile1
-    touch "${LOG_FILE}"
+    contents="asdfasd4fewefwef"
+    INSTALL_DIR="${TMP_DIR}/install2" && mkdir "${INSTALL_DIR}"
+    LOG_FILE="${TMP_DIR}/logfile2" && echo "${contents}" > "${LOG_FILE}"
+    MOVED_LOG_FILE="${INSTALL_DIR}/$(basename $LOG_FILE)"
+    move_log_file > /dev/null
 
     # execute
-    local output=$(move_log_file)
+    run cat "${MOVED_LOG_FILE}"
 
     # assert
-    assert_re_match "${output}" "Review the log file in ${LOG_FILE}"
-    assert_re_match "${output}" "less -R ${LOG_FILE}"
+    assert_no_error
+    assert_output_matches "${contents}"
+}
 
-    # cleanup
-    if [ -e "$LOG_FILE" ]; then
-        rm "${LOG_FILE}"
-    fi
-    unset LOG_FILE
-    unset INSTALL_DIR
+@test "move_log_file when LOG_FILE exists but INSTALL_DIR does not" {
+    # setup
+    INSTALL_DIR="${TMP_DIR}/install1" &&  rm -rf  "${INSTALL_DIR}"
+    LOG_FILE="${TMP_DIR}logfile1" && touch "${LOG_FILE}"
+
+    # execute
+    run move_log_file
+
+    # assert
+    assert_no_error
+    assert_output_matches "Review the log file in ${LOG_FILE}"
+    assert_output_matches "less -R ${LOG_FILE}"
+}
+
+@test "move_log_file when LOG_FILE does not exist" {
+    # setup
+
+    # execute
+    run move_log_file
+
+    # assert
+    assert_no_error
+    assert_output_equals ""
 }
 
 # test sys
