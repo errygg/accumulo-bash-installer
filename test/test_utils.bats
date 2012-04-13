@@ -743,7 +743,7 @@ test_function_called() {
     # setup
     FILE_SRC="http://blah2.com/blah2.file"
     FILE_DEST="${TMP_DIR}/blah2" && rm -rf ${FILE_DEST}
-    stub_funciton "download_apache_file" "Downloading file"
+    stub_function "download_apache_file" "Downloading file"
     eval "function verify_apache_file() {
         echo Verifying \$1 with \$2
     }"
@@ -756,15 +756,64 @@ test_function_called() {
 }
 
 @test "check_archive_file when download of file fails" {
-    a=1
+    # setup
+    FILE_SRC="http://blah3.com/blah3.file"
+    FILE_DEST="${TMP_DIR}/blah3" && rm -rf ${FILE_DEST}
+    err_msg="Oops sumpin failed"
+    stub_function "download_apache_file" "${err_msg}" 1
+    stub_function "verify_apache_file" "verify file called"
+
+    # execute
+    run check_archive_file ${FILE_DEST} ${FILE_SRC}
+
+    # assert
+    assert_error
+    assert_output_equals "${err_msg}"
 }
 
 @test "check_archive_file when download of sig fails" {
-    a=1
+    # setup
+    FILE_SRC="http://blah4.com/blah4.file"
+    FILE_DEST="${TMP_DIR}/blah4" && rm -rf ${FILE_DEST}
+    file_good="file downloaded fine"
+    err_msg="sig failed"
+    verify_msg="verify file called"
+    stub_function "verify_apache_file" "${verify_msg}"
+    eval "function download_apache_file() {
+        if [ \"\$2\" == \"$FILE_SRC\" ]; then
+          echo \"$file_good\"
+        elif [ \"\$2\" == \"${FILE_SRC}.asc\" ]; then
+          echo \"$err_msg\" && exit 1
+        else
+          echo Something else called
+        fi
+    }"
+
+    # execute
+    run check_archive_file ${FILE_DEST} ${FILE_SRC}
+
+    # assert
+    assert_error
+    assert_output_matches "${err_msg}"
+    assert_output_does_not_match "${verify_msg}"
 }
 
 @test "check_archive_file when verify fails" {
-    a=1
+    # setup
+    FILE_SRC="http://blah5.com/blah5.file"
+    FILE_DEST="${TMP_DIR}/blah5" && rm -rf ${FILE_DEST}
+    download_msg="Download called"
+    err_msg="Verify failed dude"
+    stub_function "download_apache_file" "${download_msg}"
+    stub_function "verify_apache_file" "${err_msg}" 1
+
+    # execute
+    run check_archive_file ${FILE_DEST} ${FILE_SRC}
+
+    # assert
+    assert_error
+    # recall assert_output_matches converts \n to ;
+    assert_output_matches "^${download_msg}; *${download_msg}; *${err_msg};$"
 }
 
 # test download_apache_file

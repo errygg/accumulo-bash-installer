@@ -205,9 +205,8 @@ check_archive_file() {
     local FILE_DEST=$1
     local FILE_SRC=$2
     if [ ! -e "${FILE_DEST}" ]; then
-        download_apache_file "${FILE_DEST}" "${FILE_SRC}"
-        download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc"
-        light_blue "Verifying ${FILE_DEST}"
+        download_apache_file "${FILE_DEST}" "${FILE_SRC}" && \
+        download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" && \
         verify_apache_file "${FILE_DEST}" "${FILE_DEST}.asc"
     else
         light_blue "Using existing file ${FILE_DEST}"
