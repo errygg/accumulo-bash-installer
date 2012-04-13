@@ -817,10 +817,96 @@ test_function_called() {
 }
 
 # test download_apache_file
-# test_download_apache_file_with_1_arg
-# test_download_apache_file_with_0_arg
-# test_download_apache_file_when_check_curl_fails
-# test_download_apache_file_when_file_exists
-# test_download_apache_file_when_download_fails
-# test_download_apache_file_when_download_succeeds
 
+@test "download_apache_file fails with 1 arg aborts" {
+    # setup
+    stub_function "_curl" "Just making sure this doesn't run" 1
+    DST="blah"
+    msg="abort called, what you wanna do?"
+    stub_function "abort" "${msg}" 1
+
+    # execute
+    run download_apache_file $DST
+
+    # assert
+    assert_error
+    assert_output_equals "${msg}"
+}
+
+@test "download_apache_file fails with 0 args" {
+    # setup
+    stub_function "_curl" "Just making sure this doesn't run" 1
+    msg="abort called again, here we go"
+    stub_function "abort" "${msg}" 1
+
+    # execute
+    run download_apache_file
+
+    # assert
+    assert_error
+    assert_output_equals "${msg}"
+}
+
+@test "download_apache_file when curl check fails" {
+    # setup
+    stub_function "_curl" "Just making sure this doesn't run" 1
+    msg="check curl failed, abort called again, here we go"
+    stub_function "check_curl" "${msg}" 1
+
+    # execute
+    run download_apache_file "DST" "SRC"
+
+    # assert
+    assert_error
+    assert_output_equals "${msg}"
+
+}
+
+@test "download_apache_file when destination already exists" {
+    # setup
+    stub_function "_curl" "Just making sure this doesn't run" 1
+    DEST="${TMP_DIR}/downloaded.file" && touch "${DEST}"
+    SRC="some url here"
+    stub_function "check_curl"
+
+    # execute
+    run download_apache_file "$DEST" "${SRC}"
+
+    # assert
+    assert_error
+    assert_output_matches "${DEST} already exists, not downloading"
+}
+
+@test "download_apache_file when download fails" {
+    DEST="${TMP_DIR}/dest.file"
+    SRC="awesome url"
+    stub_function "check_curl"
+    eval "function _curl() {
+        return 1
+    }"
+
+    # execute
+    run download_apache_file "$DEST" "${SRC}"
+
+    # assert
+    assert_error
+    assert_output_matches "Could not download ${SRC}"
+}
+
+@test "download_apache_file when download succeeds" {
+    DEST="${TMP_DIR}/put_me_here"
+    SRC="this should pass"
+    stub_function "check_curl"
+    msg="File downloaded, yeah"
+    # double echo since this function is executed
+    eval "function _curl() {
+        echo \"echo $msg\"
+    }"
+
+    # execute
+    run download_apache_file "$DEST" "${SRC}"
+
+    # assert
+    assert_no_error
+    assert_output_matches "${msg}"
+}

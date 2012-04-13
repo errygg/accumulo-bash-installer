@@ -211,18 +211,26 @@ check_archive_file() {
     else
         light_blue "Using existing file ${FILE_DEST}"
     fi
+}
 
+_curl() {
+    # wrapper for curl
+    $CURL -L "$2" -o "$1"
 }
 
 download_apache_file() {
     local DEST=$1
     local SRC=$2
+    if [ $# -ne 2 ]; then
+        abort "You need a DEST and a SRC to call download_apache_file"
+    fi
+    if [ -f "${DEST}" ]; then
+        abort "${DEST} already exists, not downloading"
+    fi
     check_curl
-    # get the file
-    # abort if file exists
     light_blue "Downloading ${SRC} to ${DEST}"
     light_blue "Please wait..."
-    if $CURL -L "${SRC}" -o "${DEST}"; then
+    if $(_curl "${DEST}" "${SRC}"); then
         true
     else
         abort "Could not download ${SRC}"
