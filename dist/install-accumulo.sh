@@ -88,13 +88,13 @@ _which_gpg() {
 }
 
 check_curl() {
-    if [ -z $CURL ]; then
+    if [ -z "$CURL" ]; then
         CURL=$(_which_curl) || abort "Could not find curl on your path"
     fi
 }
 
 check_gpg() {
-    if [ -z $GPG ]; then
+    if [ -z "$GPG" ]; then
         GPG=$(_which_gpg) || abort "Could not find gpg on your path"
     fi
 }
@@ -204,7 +204,7 @@ sys() {
     # execute a system command, tee'ing the results to the log file
     ORIG_INDENT="${INDENT}" && INDENT=""
     log "---------------------system command output-----------------------"
-    if [ -e "$LOG_FILE" ]; then
+    if [ -f "$LOG_FILE" ]; then
         ${CMD} 2>&1 | _tee "$LOG_FILE"
     else
         ${CMD} 2>&1
@@ -220,52 +220,73 @@ check_archive_file() {
     local FILE_DEST=$1
     local FILE_SRC=$2
     if [ ! -e "${FILE_DEST}" ]; then
-        download_apache_file "${FILE_DEST}" "${FILE_SRC}"
-        download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc"
-        light_blue "Verifying ${FILE_DEST}"
+        download_apache_file "${FILE_DEST}" "${FILE_SRC}" && \
+        download_apache_file "${FILE_DEST}.asc" "${FILE_SRC}.asc" && \
         verify_apache_file "${FILE_DEST}" "${FILE_DEST}.asc"
     else
         light_blue "Using existing file ${FILE_DEST}"
     fi
+}
+
+_curl() {
+    # wrapper for curl
+    sys "$CURL -L $2 -o $1"
 
 }
 
 download_apache_file() {
     local DEST=$1
     local SRC=$2
+    if [ $# -ne 2 ]; then
+        abort "You need a DEST and a SRC to call download_apache_file"
+    fi
+    if [ -f "${DEST}" ]; then
+        abort "${DEST} already exists, not downloading"
+    fi
     check_curl
-    # get the file
-    # abort if file exists
     light_blue "Downloading ${SRC} to ${DEST}"
     light_blue "Please wait..."
-    if $CURL -L "${SRC}" -o "${DEST}"; then
-        true
-    else
+    _curl "${DEST}" "${SRC}"
+    if [ $? -ne 0 ]; then
         abort "Could not download ${SRC}"
     fi
+}
+
+_gpg() {
+    local SIG=$1
+    local FILE=$2
+    sys "$GPG --verify $1 $2"
 }
 
 verify_apache_file() {
     local FILE=$1
     local SIG=$2
+    if [ $# -ne 2 ]; then
+        abort "You must pass in both file and signature locations"
+    fi
+    if [ ! -z "$SKIP_VERIFY" ]; then
+        light_blue "Verification skipped by user option"
+        return 0
+    fi
+    if [ ! -f "$FILE" ]; then
+        abort "${FILE} not found, verification failed"
+    fi
+    if [ ! -f "${SIG}" ]; then
+        abort "${SIG} not found, verification failed"
+    fi
     check_gpg
     light_blue "Verifying the signature of ${FILE}"
-    $GPG --verify "${SIG}" "${FILE}"
-    local verified=$?
-    if [ "$verified" -gt 0 ]; then
+    _gpg "${SIG} ${FILE}"
+    if [ "$?" -ne 0 ]; then
         red "Verification failed"
-        local loop=0
         local cont=""
-        while [ "$loop" -lt 1 ]; do
+        while [[ ! "${cont}" =~ "[ynYN]" ]]; do
             cont=$(read_input "Do you want to continue anyway [y/n]")
-            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N" ]; then
-                loop=1
-            fi
         done
         if [ "${cont}" == "y" ] || [ "${cont}" == "Y" ]; then
             light_blue "Ok, installing unverified file"
         else
-            abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html" "${INDENT}"
+            abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html.  You may also use the --skip-verify option at your own risk" "${INDENT}"
         fi
     else
         light_blue "Verification passed"
@@ -368,7 +389,7 @@ check_ssh() {
     if [[ "${HOSTNAME}" == "${SSH_HOST}" ]]; then
         light_blue "SSH appears good"
     else
-        abort "Problem with SSH, expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless"
+        abort "Problem with SSH, ran ssh -o 'PreferredAuthentications=publickey' localhost \"hostname\".  Expected ${HOSTNAME}, but got ${SSH_HOST}. Please see http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html#Setup+passphraseless"
     fi
 }
 
@@ -640,20 +661,22 @@ set_archive_dir() {
 
 usage () {
   # TODO: add options here.  Make passed in options override -f options
+  # TODO: add option to skip verification here, tests and args
     cat <<-EOF
-  Usage:  ./install-accumulo.sh [options]
+  Usage:  ./$(basename $0) [options]
 
   Description: Installs Hadoop, Zookeeper and Accumulo in one directory
                and configures them for local development.  A log file is
-               stored in ${ARCHIVE_DIR}
-               if you want to review the install
+               created and the location is displayed if you want to review
+               the install
 
   Options:
 
     -h                  display this message
     -f <config_file>    load configs from instead of prompting
     -d, --directory     sets install directory, must not exist
-    -a, --archive-dir   sets the archive directory
+    -a, --archive-dir   sets the archive directory, defaults to
+                        ${ARCHIVE_DIR}
 
 EOF
 }
@@ -703,4 +726,4 @@ else
     blue "INSTALL_DIR: ${INSTALL_DIR}"
     blue "CONFIG_FILE: ${CONFIG_FILE}"
 fi
-# built 12.04.09 23:29:28 by Michael Wall
+# built 12.04.13 23:06:39 by Michael Wall
