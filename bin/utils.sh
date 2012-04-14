@@ -215,7 +215,8 @@ check_archive_file() {
 
 _curl() {
     # wrapper for curl
-    $CURL -L "$2" -o "$1"
+    sys "$CURL -L $2 -o $1"
+
 }
 
 download_apache_file() {
@@ -230,9 +231,8 @@ download_apache_file() {
     check_curl
     light_blue "Downloading ${SRC} to ${DEST}"
     light_blue "Please wait..."
-    if $(_curl "${DEST}" "${SRC}"); then
-        true
-    else
+    _curl "${DEST}" "${SRC}"
+    if [ $? -ne 0 ]; then
         abort "Could not download ${SRC}"
     fi
 }
@@ -240,7 +240,7 @@ download_apache_file() {
 _gpg() {
     local SIG=$1
     local FILE=$2
-    $GPG --verify "$1" "$2"
+    sys "$GPG --verify $1 $2"
 }
 
 verify_apache_file() {
@@ -261,9 +261,8 @@ verify_apache_file() {
     fi
     check_gpg
     light_blue "Verifying the signature of ${FILE}"
-    if $(_gpg "${SIG} ${FILE}"); then
-        light_blue "Verification passed"
-    else
+    _gpg "${SIG} ${FILE}"
+    if [ "$?" -ne 0 ]; then
         red "Verification failed"
         local cont=""
         while [[ ! "${cont}" =~ "[ynYN]" ]]; do
@@ -274,6 +273,8 @@ verify_apache_file() {
         else
             abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html.  You may also use the --skip-verify option at your own risk" "${INDENT}"
         fi
+    else
+        light_blue "Verification passed"
     fi
 }
 
