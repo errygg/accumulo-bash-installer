@@ -237,30 +237,43 @@ download_apache_file() {
     fi
 }
 
+_gpg() {
+    local SIG=$1
+    local FILE=$2
+    $GPG --verify "$1" "$2"
+}
+
 verify_apache_file() {
     local FILE=$1
     local SIG=$2
+    if [ $# -ne 2 ]; then
+        abort "You must pass in both file and signature locations"
+    fi
+    if [ ! -z "$SKIP_VERIFY" ]; then
+        light_blue "Verification skipped by user option"
+        return 0
+    fi
+    if [ ! -f "$FILE" ]; then
+        abort "${FILE} not found, verification failed"
+    fi
+    if [ ! -f "${SIG}" ]; then
+        abort "${SIG} not found, verification failed"
+    fi
     check_gpg
     light_blue "Verifying the signature of ${FILE}"
-    $GPG --verify "${SIG}" "${FILE}"
-    local verified=$?
-    if [ "$verified" -gt 0 ]; then
+    if $(_gpg "${SIG} ${FILE}"); then
+        light_blue "Verification passed"
+    else
         red "Verification failed"
-        local loop=0
         local cont=""
-        while [ "$loop" -lt 1 ]; do
+        while [[ ! "${cont}" =~ "[ynYN]" ]]; do
             cont=$(read_input "Do you want to continue anyway [y/n]")
-            if [ "${cont}" == "y" ] || [ "${cont}" == "n" ] || [ "${cont}" == "Y" ] || [ "${cont}" == "N" ]; then
-                loop=1
-            fi
         done
         if [ "${cont}" == "y" ] || [ "${cont}" == "Y" ]; then
             light_blue "Ok, installing unverified file"
         else
-            abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html" "${INDENT}"
+            abort "Review output above for more info on the verification failure.  You may also refer to http://www.apache.org/info/verification.html.  You may also use the --skip-verify option at your own risk" "${INDENT}"
         fi
-    else
-        light_blue "Verification passed"
     fi
 }
 

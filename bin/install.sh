@@ -42,6 +42,7 @@ set_archive_dir() {
 
 usage () {
   # TODO: add options here.  Make passed in options override -f options
+  # TODO: add option to skip verification here, tests and args
     cat <<-EOF
   Usage:  ./$(basename $0) [options]
 

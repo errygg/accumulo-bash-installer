@@ -859,7 +859,6 @@ test_function_called() {
     # assert
     assert_error
     assert_output_equals "${msg}"
-
 }
 
 @test "download_apache_file when destination already exists" {
@@ -909,4 +908,137 @@ test_function_called() {
     # assert
     assert_no_error
     assert_output_matches "${msg}"
+}
+
+# test verify_apache_file
+
+@test "verify_apache_file fails with 1 arg" {
+    # execute
+    stub_function "_gpg" "Just making sure this doesn't run" 1
+    run verify_apache_file "arg1"
+
+    # assert
+    assert_error
+    assert_output_matches "You must pass in both file and signature locations"
+}
+
+@test "verify_apache_file fails with 0 arg" {
+    # execute
+    stub_function "_gpg" "Just making sure this doesn't run" 1
+    run verify_apache_file
+
+    # assert
+    assert_error
+    assert_output_matches "You must pass in both file and signature locations"
+}
+
+@test "verify_apache_file is skipped with SKIP_VERIFY variable" {
+    # setup
+    stub_function "_gpg" "Just making sure this doesn't run" 1
+    SKIP_VERIFY=true
+
+    # execute
+    run verify_apache_file "file" "src"
+
+    # assert
+    assert_no_error
+    assert_output_matches "Verification skipped by user option"
+}
+
+@test "verify_apache_file aborts if FILE does not exist" {
+    # setup
+    stub_function "_gpg" "Just making sure this doesn't run" 1
+    FILE="${TMP_DIR}/file" && rm -rf "${FILE}"
+
+    # execute
+    run verify_apache_file "${FILE}" "sig"
+
+    # assert
+    assert_error
+    assert_output_matches "${FILE} not found, verification failed"
+}
+
+@test "verify_apache_file aborts if SIG does not exist" {
+    # setup
+    stub_function "_gpg" "Just making sure this doesn't run" 1
+    FILE="${TMP_DIR}/file" && touch "${FILE}"
+    SIG="${TMP_DIR}/sig" && rm -rf "${SIG}"
+
+    # execute
+    run verify_apache_file "${FILE}" "${SIG}"
+
+    # assert
+    assert_error
+    assert_output_matches "${SIG} not found, verification failed"
+}
+
+@test "verify_apache_file aborts if gpg check fails" {
+    # setup
+    FILE="${TMP_DIR}/file2" && touch "${FILE}"
+    SIG="${TMP_DIR}/sig2" && touch "${SIG}"
+    err_msg="check_gpg failed, abort called here"
+    stub_function "check_gpg" "${err_msg}" 1
+
+    # execute
+    run verify_apache_file "${FILE}" "${SIG}"
+
+    # assert
+    assert_error
+    assert_output_equals "${err_msg}"
+}
+
+@test "verify_apache_file continues if gpg fails and user says yes" {
+    # setup
+    FILE="${TMP_DIR}/file2" && touch "${FILE}"
+    SIG="${TMP_DIR}/sig2" && touch "${SIG}"
+    stub_function "check_gpg"
+    eval "function _gpg() {
+        return 1
+    }"
+    eval "function read_input() {
+        echo y
+    }"
+
+    # execute
+    run verify_apache_file "${FILE}" "${SIG}"
+
+    # assert
+    assert_no_error
+    assert_output_matches "Verification failed"
+    assert_output_matches "Ok, installing unverified file"
+}
+
+@test "verify_apache_file aborts if gpg fails and user says no" {
+    # setup
+    FILE="${TMP_DIR}/file3" && touch "${FILE}"
+    SIG="${TMP_DIR}/sig3" && touch "${SIG}"
+    stub_function "check_gpg"
+    eval "function _gpg() {
+        return 1
+    }"
+    eval "function read_input() {
+        echo n
+    }"
+
+    # execute
+    run verify_apache_file "${FILE}" "${SIG}"
+
+    # assert
+    assert_error
+    assert_output_matches "Verification failed"
+    assert_output_matches "Review output above for more info"
+}
+
+@test "verify_apache_file if gpg succeeds" {
+    FILE="${TMP_DIR}/file3" && touch "${FILE}"
+    SIG="${TMP_DIR}/sig3" && touch "${SIG}"
+    stub_function "check_gpg"
+    stub_function "_gpg"
+
+    # execute
+    run verify_apache_file "${FILE}" "${SIG}"
+
+    # assert
+    assert_no_error
+    assert_output_matches "Verification passed"
 }
