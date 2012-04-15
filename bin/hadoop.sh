@@ -1,16 +1,39 @@
 # START hadoop.sh
 
+# hadoop archive file
+HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
+HADOOP_SOURCE="${HADOOP_MIRROR}/${HADOOP_FILENAME}"
+HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
+
 install_hadoop() {
-    INDENT="  "
+    if [ -z "$INSTALL_DIR"] ; then
+        abort "You must set INSTALL_DIR"
+    fi
+    if [ -z "$HADOOP_VERSION"] ; then
+        abort "You must set HADOOP_VERSION"
+    fi
+    if [ -z "$HADOOP_MIRROR"] ; then
+        abort "You must set HADOOP_MIRROR"
+    fi
+    if [ -z "$ARCHIVE_DIR"] ; then
+        abort "You must set ARCHIVE_DIR"
+    fi
 
-    # hadoop archive file
-    local HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
-    local HADOOP_SOURCE="${HADOOP_MIRROR}/${HADOOP_FILENAME}"
-    local HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
+    INDENT="  " && log
+    light_blue "Installing Hadoop..." && INDENT="    "
+    unarchive_file
+    setup_directory
+    setup_hadoop_conf
+    setup_core_site
+    setup_mapred_site
+    setup_hdfs_site
+    setup_hadoop_env
+    format_namenode
+    start_hadoop
+    test_install
+}
 
-    log
-    light_blue "Installing Hadoop..."
-    INDENT="    "
+unarchive_file() {
     check_archive_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
 
     # install from archive
