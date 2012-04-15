@@ -74,20 +74,73 @@ test_variable_set() {
     test_variable_set "ARCHIVE_DIR"
 }
 
-@test "install_hadoop fails if INSTALL_DIR/hadoop* exists" {
+@test "install_hadoop fails if INSTALL_DIR is not writable" {
+    # setup
+    chmod 555 "$INSTALL_DIR"
 
+    # execute
+    run install_hadoop
+
+    # assert
+    assert_error
+    assert_output_matches "The directory ${INSTALL_DIR} is not writable by you"
+}
+
+@test "install_hadoop fails if INSTALL_DIR/hadoop* exists" {
+    # setup
+    mkdir "${INSTALL_DIR}/hadoop-"
+
+    # execute
+    run install_hadoop
+
+    # assert
+    assert_error
+    assert_output_matches "Looks like hadoop is already installed"
 }
 
 @test "install_hadoop sets HADOOP_FILENAME" {
+    # setup
+    stub_install_hadoop_functions
+    eval "function log(){
+        echo \"\${HADOOP_FILENAME}\"
+    }"
 
+    # execute
+    run install_hadoop
+
+    # assert
+    assert_no_error
+    assert_output_matches "hadoop-${HADOOP_VERSION}.tar.gz"
 }
 
 @test "install_hadoop sets HADOOP_SOURCE" {
+    # setup
+    stub_install_hadoop_functions
+    eval "function log(){
+        echo \"\${HADOOP_SOURCE}\"
+    }"
 
+    # execute
+    run install_hadoop
+
+    # assert
+    assert_no_error
+    assert_output_matches "${HADOOP_MIRROR}/hadoop-${HADOOP_VERSION}.tar.gz"
 }
 
 @test "install_hadoop sets HADOOP_DEST" {
+    # setup
+    stub_install_hadoop_functions
+    eval "function log(){
+        echo \"\${HADOOP_DEST}\"
+    }"
 
+    # execute
+    run install_hadoop
+
+    # assert
+    assert_no_error
+    assert_output_matches "${ARCHIVE_DIR}/hadoop-${HADOOP_VERSION}.tar.gz"
 }
 
 test_function_called() {
@@ -100,7 +153,7 @@ test_function_called() {
      run install_hadoop
 
      # assert
-     assert_no_error
+     #assert_no_error
      assert_output_matches "${msg}"
 }
 

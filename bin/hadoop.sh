@@ -1,23 +1,30 @@
 # START hadoop.sh
 
 # hadoop archive file
-HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
-HADOOP_SOURCE="${HADOOP_MIRROR}/${HADOOP_FILENAME}"
-HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
 
 install_hadoop() {
-    if [ -z "$INSTALL_DIR"] ; then
+    if [ -z "$INSTALL_DIR" ] ; then
         abort "You must set INSTALL_DIR"
     fi
-    if [ -z "$HADOOP_VERSION"] ; then
+    if [ -z "$HADOOP_VERSION" ] ; then
         abort "You must set HADOOP_VERSION"
     fi
-    if [ -z "$HADOOP_MIRROR"] ; then
+    if [ -z "$HADOOP_MIRROR" ] ; then
         abort "You must set HADOOP_MIRROR"
     fi
-    if [ -z "$ARCHIVE_DIR"] ; then
+    if [ -z "$ARCHIVE_DIR" ] ; then
         abort "You must set ARCHIVE_DIR"
     fi
+    if [ ! -w "$INSTALL_DIR" ]; then
+        abort "The directory ${INSTALL_DIR} is not writable by you"
+    fi
+    ls ${INSTALL_DIR}/hadoop* 2> /dev/null && installed=true
+    if [ "${installed}" == "true" ]; then
+        abort "Looks like hadoop is already installed"
+    fi
+    local HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
+    local HADOOP_SOURCE="${HADOOP_MIRROR}/${HADOOP_FILENAME}"
+    local HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
 
     INDENT="  " && log
     light_blue "Installing Hadoop..." && INDENT="    "
