@@ -34,13 +34,14 @@ teardown() {
 
 stub_install_hadoop_functions() {
     stub_function "unarchive_file"
-    stub_function "setup_directory"
-    stub_function "setup_hadoop_conf"
-    stub_function "setup_core_site"
-    stub_function "setup_mapred_site"
-    stub_function "setup_hdfs_site"
-    stub_function "setup_hadoop_env"
-    stub_function "format_namenode"
+    stub_function "setup_hadoop_home"
+    stub_function "configure_hadoop"
+#    stub_function "setup_hadoop_conf"
+#    stub_function "setup_core_site"
+#    stub_function "setup_mapred_site"
+#    stub_function "setup_hdfs_site"
+#    stub_function "setup_hadoop_env"
+#    stub_function "format_namenode"
     stub_function "start_hadoop"
     stub_function "test_install"
 }
@@ -144,45 +145,29 @@ test_variable_set() {
 }
 
 test_function_called() {
-     fname=$1
-     # setup
-     local msg="$fname called"
-     stub_function "$fname" "${msg}" 0
+    fname=$1
+    # setup
+    local msg="$fname called"
+    stub_function "$fname" "${msg}" 0
 
-     # execute
-     run install_hadoop
+    # execute
+    run install_hadoop
 
-     # assert
-     #assert_no_error
-     assert_output_matches "${msg}"
+    # assert
+    assert_no_error
+    assert_output_matches "${msg}"
 }
 
-@test "install_hadoop call unarchive_file" {
+@test "install_hadoop calls unarchive_file" {
     stub_install_hadoop_functions && test_function_called "unarchive_file"
 }
 
-@test "install_hadoop call setup_directory" {
-    stub_install_hadoop_functions && test_function_called "setup_directory"
+@test "install_hadoop calls setup_hadoop_home" {
+    stub_install_hadoop_functions && test_function_called "setup_hadoop_home"
 }
 
-@test "install_hadoop call setup_hadoop_conf" {
-    stub_install_hadoop_functions && test_function_called "setup_hadoop_conf"
-}
-
-@test "install_hadoop call setup_core_site" {
-    stub_install_hadoop_functions && test_function_called "setup_core_site"
-}
-
-@test "install_hadoop call setup_mapred_site" {
-    stub_install_hadoop_functions && test_function_called "setup_mapred_site"
-}
-
-@test "install_hadoop call setup_hdfs_site" {
-    stub_install_hadoop_functions && test_function_called "setup_hdfs_site"
-}
-
-@test "install_hadoop call setup_hadoop_env" {
-    stub_install_hadoop_functions && test_function_called "setup_hadoop_env"
+@test "install_hadoop calls configure_hadoop" {
+    stub_install_hadoop_functions && test_function_called "configure_hadoop"
 }
 
 @test "install_hadoop call format_namenode" {
@@ -197,4 +182,166 @@ test_function_called() {
     stub_install_hadoop_functions && test_function_called "test_install"
 }
 
+# test unarchive_file
 
+@test "unarchive_file calls check_archive_file with DEST and SRC" {
+    # setup
+    HADOOP_SOURCE="some source"
+    HADOOP_DEST="some dest"
+    stub_function "sys"
+    eval "function check_archive_file() {
+        echo \"check_archive_file \$1 \$2\"
+    }"
+
+    # execute
+    run unarchive_file
+
+    # assert
+    assert_no_error
+    assert_output_matches "check_archive_file ${HADOOP_DEST} ${HADOOP_SOURCE}"
+}
+
+@test "unarchive_file extracts the file into INSTALL_DIR" {
+    # setup
+    HADOOP_DEST="some other dest"
+    stub_function "check_archive_file"
+    eval "function sys() {
+        echo \"\$1\"
+    }"
+
+    # execute
+    run unarchive_file
+
+    # assert
+    assert_no_error
+    assert_output_matches "tar -xzf ${HADOOP_DEST} -C ${INSTALL_DIR}"
+}
+
+@test "setup_hadoop_home creates symlink" {
+    # setup
+    eval "function sys() {
+        echo \"\$1\"
+    }"
+
+    # execute
+    run setup_hadoop_home
+
+    # assert
+    assert_no_error
+    assert_output_matches "ln -s ${INSTALL_DIR}/hadoop-${HADOOP_VERSION} ${INSTALL_DIR}/hadoop"
+}
+
+@test "setup_hadoop_home sets HADOOP_HOME" {
+    # setup
+    stub_function "sys"
+
+    # execute
+    run setup_hadoop_home
+
+    # assert
+    assert_no_error
+    assert_output_matches "HADOOP_HOME set to ${INSTALL_DIR}/hadoop"
+}
+
+# test configure_hadoop
+
+stub_conf_functions() {
+    stub_function "setup_core_site"
+    stub_function "setup_mapred_site"
+    stub_function "setup_hdfs_site"
+    stub_function "setup_hadoop_env"
+}
+
+@test "configure_hadoop sets HADOOP_CONF" {
+    # setup
+    stub_conf_functions
+    HADOOP_HOME="${INSTALL_DIR}/hadoop"
+
+    # execute
+    run configure_hadoop
+
+    # assert
+    assert_no_error
+    assert_output_matches "HADOOP_CONF set to ${INSTALL_DIR}/hadoop/conf"
+
+}
+
+test_conf_function_called() {
+    fname=$1
+    # setup
+    local msg="$fname called"
+    stub_function "$fname" "${msg}" 0
+
+    # execute
+    run configure_hadoop
+
+    # assert
+    assert_no_error
+    assert_output_matches "${msg}"
+}
+
+@test "configure_hadoop calls setup_core_site" {
+    stub_conf_functions && test_conf_function_called "setup_core_site"
+}
+
+@test "configure_hadoop calls setup_mapred_site" {
+    stub_conf_functions && test_conf_function_called "setup_mapred_site"
+}
+
+@test "configure_hadoop calls setup_core_site" {
+    stub_conf_functions && test_conf_function_called "setup_hdfs_site"
+}
+
+@test "configure_hadoop calls setup_core_site" {
+    stub_conf_functions && test_conf_function_called "setup_hadoop_env"
+}
+
+# test format_namenode
+
+@test "format_namenode calls format" {
+
+}
+
+# test start_hadoop
+
+@test "start_hadoop calls start-all" {
+
+}
+
+# test test_hadoop
+
+@test "test_hadoop creates a hdfs directory" {
+
+}
+
+@test "test_hadoop checks hdfs directory" {
+
+}
+
+@test "test_hadoop removes hdfs directory" {
+
+}
+
+# test setup_core_site
+
+@test "setup_core_site creates a core-site.xml" {
+
+}
+
+# test setup_mapred_site
+
+@test "setup_mapred_site creates a mapred-site.xml" {
+
+}
+
+# test setup_hdfs_site
+
+@test "setup_hdfs_site creates a hdfs-site.xml" {
+
+}
+
+# test setup_hadoop_env
+
+@test "setup_hadoop_env creates a hadoop-env.sh" {
+
+}

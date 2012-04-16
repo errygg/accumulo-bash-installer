@@ -1,6 +1,8 @@
 # START hadoop.sh
 
-# hadoop archive file
+# script local variables
+HADOOP_HOME=""
+HADOOP_CONF=""
 
 install_hadoop() {
     if [ -z "$INSTALL_DIR" ] ; then
@@ -29,34 +31,41 @@ install_hadoop() {
     INDENT="  " && log
     light_blue "Installing Hadoop..." && INDENT="    "
     unarchive_file
-    setup_directory
-    setup_hadoop_conf
-    setup_core_site
-    setup_mapred_site
-    setup_hdfs_site
-    setup_hadoop_env
+    setup_hadoop_home
+    configure_hadoop
     format_namenode
     start_hadoop
     test_install
 }
 
 unarchive_file() {
+    light_blue "Checking the archive for the install file"
     check_archive_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
-
-    # install from archive
-    light_blue "Extracting ${HADOOP_DEST} to ${INSTALL_DIR}"
+    light_blue "Extracting file"
     sys "tar -xzf ${HADOOP_DEST} -C ${INSTALL_DIR}"
+}
 
+setup_hadoop_home() {
     # setup directory
     local HADOOP_DIR="${INSTALL_DIR}/hadoop-${HADOOP_VERSION}"
-    local HADOOP_HOME="${INSTALL_DIR}/hadoop"
-    light_blue "Setting up ${HADOOP_HOME}" "${INDENT}"
+    HADOOP_HOME="${INSTALL_DIR}/hadoop"
     sys "ln -s ${HADOOP_DIR} ${HADOOP_HOME}"
+    light_blue "HADOOP_HOME set to ${HADOOP_HOME}"
+}
 
+configure_hadoop() {
     # configure properties, these are very specific to the version
     light_blue "Configuring hadoop"
     INDENT="      "
     local HADOOP_CONF="${HADOOP_HOME}/conf"
+    light_blue "HADOOP_CONF set to ${HADOOP_CONF}"
+    setup_core_site
+    setup_mapred_site
+    setup_hdfs_site
+    setup_hadoop_env
+}
+
+setup_core_site() {
 
     light_blue "Setting up core-site.xml"
     local CORE_SITE=$( cat <<-EOF
@@ -74,7 +83,9 @@ unarchive_file() {
 EOF
 )
     echo "${CORE_SITE}" > "${HADOOP_CONF}/core-site.xml"
+}
 
+setup_mapred_site() {
     light_blue "Setting up mapred-site.xml"
     local MAPRED_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
@@ -91,7 +102,9 @@ EOF
 EOF
 )
     echo "${MAPRED_SITE}" > "${HADOOP_CONF}/mapred-site.xml"
+}
 
+setup_hdfs_site() {
     light_blue "Setting up hdfs-site.xml"
     local HDFS_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
@@ -119,7 +132,9 @@ EOF
 EOF
 )
     echo "${HDFS_SITE}" > "${HADOOP_CONF}/hdfs-site.xml"
+}
 
+setup_hadoop_env() {
     light_blue "Setting up hadoop-env.sh"
     local HADOOP_ENV=$( cat <<-EOF
 # Set Hadoop-specific environment variables here.
@@ -181,16 +196,22 @@ export HADOOP_JOBTRACKER_OPTS="-Dcom.sun.management.jmxremote $HADOOP_JOBTRACKER
 EOF
 )
     echo "${HADOOP_ENV}" > "${HADOOP_CONF}/hadoop-env.sh"
+}
 
+format_namenode() {
     # format hdfs
     light_blue "Formatting namenode"
     sys "${HADOOP_HOME}/bin/hadoop namenode -format"
+}
 
+start_hadoop() {
     # start hadoop
     log ""
     light_blue "Starting hadoop"
     sys "${HADOOP_HOME}/bin/start-all.sh"
+}
 
+test_hadoop() {
     # test installation
     log ""
     light_blue "Testing hadoop"
