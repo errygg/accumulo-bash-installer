@@ -299,13 +299,35 @@ test_conf_function_called() {
 # test format_namenode
 
 @test "format_namenode calls format" {
+    # setup
+    eval "function sys() {
+        echo \"\$1\"
+    }"
+    HADOOP_HOME="${INSTALL_DIR}/blah-blah"
 
+    # execute
+    run format_namenode
+
+    # assert
+    assert_no_error
+    assert_output_matches "${INSTALL_DIR}/blah-blah/bin/hadoop namenode -format"
 }
 
 # test start_hadoop
 
 @test "start_hadoop calls start-all" {
+    # setup
+    eval "function sys() {
+        echo \"\$1\"
+    }"
+    HADOOP_HOME="${INSTALL_DIR}/bleh-bleh"
 
+    # execute
+    run start_hadoop
+
+    # assert
+    assert_no_error
+    assert_output_matches "${INSTALL_DIR}/bleh-bleh/bin/start-all.sh"
 }
 
 # test test_hadoop
