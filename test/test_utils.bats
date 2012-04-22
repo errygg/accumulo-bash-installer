@@ -688,6 +688,55 @@ test_function_called() {
     assert_output_matches "$(${cmd})"
 }
 
+@test "sys aborts if command fails and LOG_FILE doesn't exist" {
+    # setup
+    cmd="ls /Ishouldfailforyou"
+
+    # execute
+    run sys "${cmd}"
+
+    # assert
+    assert_error
+    assert_output_matches "Error running ${cmd}"
+}
+
+@test "sys exits if command fails and LOG_FILE exists" {
+    # setup
+    LOG_FILE="${TMP_DIR}/logfile5" && touch "${LOG_FILE}"
+    cmd="ls /adirectorythatdoesntexist"
+
+    # execute
+    run sys "${cmd}"
+
+    # assert
+    assert_error
+}
+
+@test "sys exits and dumps to LOG_FILE if it exists" {
+    # setup
+    LOG_FILE="${TMP_DIR}/logfile6" && touch "${LOG_FILE}"
+    cmd="ls /anotherdirectorythatdoesntexist"
+    run sys "${cmd}"
+
+    # execute
+    run cat "$LOG_FILE"
+
+    # assert
+    assert_output_matches "Error running ${cmd}"
+}
+
+@test "sys doesn't exit on failure if continue" {
+    # setup
+    cmd="ls /failmenow"
+
+    # execute
+    run sys "${cmd}" "true"
+
+    # assert
+    assert_no_error
+    assert_output_matches "Error running ${cmd}"
+}
+
 # test check_archive_file
 
 @test "check_archive_file with one arg fails" {
@@ -880,7 +929,9 @@ test_function_called() {
     DEST="${TMP_DIR}/dest.file"
     SRC="awesome url"
     stub_function "check_curl"
+    msg="This should really the result of failure in the sys method"
     eval "function _curl() {
+        echo \"${msg}\"
         return 1
     }"
 
@@ -889,7 +940,7 @@ test_function_called() {
 
     # assert
     assert_error
-    assert_output_matches "Could not download ${SRC}"
+    assert_output_matches "${msg}"
 }
 
 @test "download_apache_file when download succeeds" {

@@ -1,8 +1,4 @@
-- test apache downloader
-  -- Maybe move download of asc to verify portion
-- test verifier
-  -- provide option to skip verify, have to update check_archive_file
-  -- work out flow if fails
+- Add SKIP_VERIFY to main install function
 - Code zookeeper install and test
   -- update utils and test_utils once know how to grep jps for running
 - Code accumulo install and test
@@ -15,7 +11,6 @@
 - Update readme
   -- explain use cases (local development, multiple versions, isolation, hardware not vm)
 - Test on linux
-- Test update to sys command that aborts on exit code -gt 0
 - Give option to change apache mirror
 - Catch CTRL-C and run abort
 - Update to hadoop 0.20.203?

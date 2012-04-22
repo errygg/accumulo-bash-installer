@@ -185,6 +185,7 @@ _tee() {
 
 sys() {
     local CMD=$1
+    local continue=$2 # won't abort if failure
     light_blue "Running system command '${CMD}'"
     # execute a system command, tee'ing the results to the log file
     ORIG_INDENT="${INDENT}" && INDENT=""
@@ -196,10 +197,13 @@ sys() {
     fi
     exit_code="${PIPESTATUS[0]}"
     log "---------------------end system command output-------------------"
-    if [ "$exit_code" -gt 0 ]; then
-        abort "Error running ${CMD} : exit code was ${exit_code}"
+    if [ "$exit_code" -ne 0 ]; then
+        red "Error running ${CMD} : exit code was ${exit_code}"
+        if [ -z "$continue" ]; then
+            abort
+        fi
     fi
-    INDENT="${ORIG_INDENT}"
+    INDENT="${ORIG_INDENT}" && return $exit_code
 }
 
 check_archive_file() {
@@ -236,15 +240,12 @@ download_apache_file() {
     light_blue "Downloading ${SRC} to ${DEST}"
     light_blue "Please wait..."
     _curl "${DEST}" "${SRC}"
-    if [ $? -ne 0 ]; then
-        abort "Could not download ${SRC}"
-    fi
 }
 
 _gpg() {
     local SIG=$1
     local FILE=$2
-    sys "$GPG --verify $1 $2"
+    sys "$GPG --verify $1 $2" "true"
 }
 
 verify_apache_file() {
