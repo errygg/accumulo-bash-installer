@@ -200,17 +200,25 @@ _tee() {
 
 sys() {
     local CMD=$1
+    local continue=$2 # won't abort on failure, you must handle it
     light_blue "Running system command '${CMD}'"
     # execute a system command, tee'ing the results to the log file
     ORIG_INDENT="${INDENT}" && INDENT=""
     log "---------------------system command output-----------------------"
     if [ -f "$LOG_FILE" ]; then
-        ${CMD} 2>&1 | _tee "$LOG_FILE"
+        ${CMD} 2>&1 |  _tee "$LOG_FILE"
     else
         ${CMD} 2>&1
     fi
+    exit_code="${PIPESTATUS[0]}"
     log "---------------------end system command output-------------------"
-    INDENT="${ORIG_INDENT}"
+    if [ "$exit_code" -ne 0 ]; then
+        red "Error running ${CMD} : exit code was ${exit_code}"
+        if [ -z "$continue" ]; then
+            abort
+        fi
+    fi
+    INDENT="${ORIG_INDENT}" && return $exit_code
 }
 
 check_archive_file() {
@@ -247,15 +255,12 @@ download_apache_file() {
     light_blue "Downloading ${SRC} to ${DEST}"
     light_blue "Please wait..."
     _curl "${DEST}" "${SRC}"
-    if [ $? -ne 0 ]; then
-        abort "Could not download ${SRC}"
-    fi
 }
 
 _gpg() {
     local SIG=$1
     local FILE=$2
-    sys "$GPG --verify $1 $2"
+    sys "$GPG --verify $1 $2" "true"
 }
 
 verify_apache_file() {
@@ -411,33 +416,71 @@ pre_install () {
 # END pre_install.sh
 # START hadoop.sh
 
-install_hadoop() {
-    INDENT="  "
+# script local variables
+HADOOP_HOME=""
+HADOOP_CONF=""
 
-    # hadoop archive file
+install_hadoop() {
+    if [ -z "$INSTALL_DIR" ] ; then
+        abort "You must set INSTALL_DIR"
+    fi
+    if [ -z "$HADOOP_VERSION" ] ; then
+        abort "You must set HADOOP_VERSION"
+    fi
+    if [ -z "$HADOOP_MIRROR" ] ; then
+        abort "You must set HADOOP_MIRROR"
+    fi
+    if [ -z "$ARCHIVE_DIR" ] ; then
+        abort "You must set ARCHIVE_DIR"
+    fi
+    if [ ! -w "$INSTALL_DIR" ]; then
+        abort "The directory ${INSTALL_DIR} is not writable by you"
+    fi
+    ls ${INSTALL_DIR}/hadoop* 2> /dev/null && installed=true
+    if [ "${installed}" == "true" ]; then
+        abort "Looks like hadoop is already installed"
+    fi
     local HADOOP_FILENAME="hadoop-${HADOOP_VERSION}.tar.gz"
     local HADOOP_SOURCE="${HADOOP_MIRROR}/${HADOOP_FILENAME}"
     local HADOOP_DEST="${ARCHIVE_DIR}/${HADOOP_FILENAME}"
 
-    log
-    light_blue "Installing Hadoop..."
-    INDENT="    "
+    INDENT="  " && log
+    light_blue "Installing Hadoop..." && INDENT="    "
+    unarchive_file
+    setup_hadoop_home
+    configure_hadoop
+    format_namenode
+    start_hadoop
+    test_hadoop
+}
+
+unarchive_file() {
     check_archive_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
-
-    # install from archive
-    light_blue "Extracting ${HADOOP_DEST} to ${INSTALL_DIR}"
+    light_blue "Extracting file"
     sys "tar -xzf ${HADOOP_DEST} -C ${INSTALL_DIR}"
+}
 
+setup_hadoop_home() {
     # setup directory
     local HADOOP_DIR="${INSTALL_DIR}/hadoop-${HADOOP_VERSION}"
-    local HADOOP_HOME="${INSTALL_DIR}/hadoop"
-    light_blue "Setting up ${HADOOP_HOME}" "${INDENT}"
+    HADOOP_HOME="${INSTALL_DIR}/hadoop"
     sys "ln -s ${HADOOP_DIR} ${HADOOP_HOME}"
+    light_blue "HADOOP_HOME set to ${HADOOP_HOME}"
+}
 
+configure_hadoop() {
     # configure properties, these are very specific to the version
     light_blue "Configuring hadoop"
     INDENT="      "
     local HADOOP_CONF="${HADOOP_HOME}/conf"
+    light_blue "HADOOP_CONF set to ${HADOOP_CONF}"
+    setup_core_site
+    setup_mapred_site
+    setup_hdfs_site
+    setup_hadoop_env
+}
+
+setup_core_site() {
 
     light_blue "Setting up core-site.xml"
     local CORE_SITE=$( cat <<-EOF
@@ -455,7 +498,9 @@ install_hadoop() {
 EOF
 )
     echo "${CORE_SITE}" > "${HADOOP_CONF}/core-site.xml"
+}
 
+setup_mapred_site() {
     light_blue "Setting up mapred-site.xml"
     local MAPRED_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
@@ -472,8 +517,13 @@ EOF
 EOF
 )
     echo "${MAPRED_SITE}" > "${HADOOP_CONF}/mapred-site.xml"
+}
 
+setup_hdfs_site() {
     light_blue "Setting up hdfs-site.xml"
+    if [ -z "$HDFS_DIR" ]; then
+        abort "You must have HDFS_DIR set to run setup_hdfs_site"
+    fi
     local HDFS_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -500,8 +550,13 @@ EOF
 EOF
 )
     echo "${HDFS_SITE}" > "${HADOOP_CONF}/hdfs-site.xml"
+}
 
+setup_hadoop_env() {
     light_blue "Setting up hadoop-env.sh"
+    if [ -z "$JAVA_HOME" ]; then
+        abort "You must have JAVA_HOME set to run setup_hadoop_env"
+    fi
     local HADOOP_ENV=$( cat <<-EOF
 # Set Hadoop-specific environment variables here.
 
@@ -562,31 +617,35 @@ export HADOOP_JOBTRACKER_OPTS="-Dcom.sun.management.jmxremote $HADOOP_JOBTRACKER
 EOF
 )
     echo "${HADOOP_ENV}" > "${HADOOP_CONF}/hadoop-env.sh"
+}
 
-    # format hdfs
+format_namenode() {
+    log ""
     light_blue "Formatting namenode"
     sys "${HADOOP_HOME}/bin/hadoop namenode -format"
+}
 
-    # start hadoop
+start_hadoop() {
     log ""
     light_blue "Starting hadoop"
     sys "${HADOOP_HOME}/bin/start-all.sh"
+}
 
-    # test installation
+test_hadoop() {
     log ""
     light_blue "Testing hadoop"
-    INDENT="        "
-    light_blue "Creating a /user/test directory in hdfs"
-    sys "${HADOOP_HOME}/bin/hadoop fs -mkdir /user/test"
 
-    light_blue "Ensure the directory was created with 'fs -ls /user'"
-    local hadoop_check=$("${HADOOP_HOME}/bin/hadoop" fs -ls /user)
-    if [[ "${hadoop_check}" =~ .*/user/test ]]; then
-        light_blue "Check looks good, removing directory"
-        sys "${HADOOP_HOME}/bin/hadoop fs -rmr /user/test"
-    else
-        abort "Unable to create the directory in HDFS"
-    fi
+    local hdfs_dir="/user/test"
+    INDENT="        "
+    light_blue "Creating a directory in hdfs"
+    sys "${HADOOP_HOME}/bin/hadoop fs -mkdir ${hdfs_dir}"
+
+    light_blue "Ensuring the directory was created"
+    sys "${HADOOP_HOME}/bin/hadoop fs -ls ${hdfs_dir}"
+
+
+    light_blue "Check looks good, removing directory"
+    sys "${HADOOP_HOME}/bin/hadoop fs -rmr ${hdfs_dir}"
 
     INDENT="  "
     green "Hadoop is installed and running"
@@ -726,4 +785,4 @@ else
     blue "INSTALL_DIR: ${INSTALL_DIR}"
     blue "CONFIG_FILE: ${CONFIG_FILE}"
 fi
-# built 12.04.13 23:06:39 by Michael Wall
+# built 12.04.22 18:02:04 by Michael Wall
