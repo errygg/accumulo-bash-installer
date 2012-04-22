@@ -190,11 +190,15 @@ sys() {
     ORIG_INDENT="${INDENT}" && INDENT=""
     log "---------------------system command output-----------------------"
     if [ -f "$LOG_FILE" ]; then
-        ${CMD} 2>&1 | _tee "$LOG_FILE"
+        ${CMD} 2>&1 |  _tee "$LOG_FILE"
     else
         ${CMD} 2>&1
     fi
+    exit_code="${PIPESTATUS[0]}"
     log "---------------------end system command output-------------------"
+    if [ "$exit_code" -gt 0 ]; then
+        abort "Error running ${CMD} : exit code was ${exit_code}"
+    fi
     INDENT="${ORIG_INDENT}"
 }
 

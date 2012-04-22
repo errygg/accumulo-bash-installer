@@ -35,11 +35,10 @@ install_hadoop() {
     configure_hadoop
     format_namenode
     start_hadoop
-    test_install
+    test_hadoop
 }
 
 unarchive_file() {
-    light_blue "Checking the archive for the install file"
     check_archive_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
     light_blue "Extracting file"
     sys "tar -xzf ${HADOOP_DEST} -C ${INSTALL_DIR}"
@@ -106,6 +105,9 @@ EOF
 
 setup_hdfs_site() {
     light_blue "Setting up hdfs-site.xml"
+    if [ -z "$HDFS_DIR" ]; then
+        abort "You must have HDFS_DIR set to run setup_hdfs_site"
+    fi
     local HDFS_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -136,6 +138,9 @@ EOF
 
 setup_hadoop_env() {
     light_blue "Setting up hadoop-env.sh"
+    if [ -z "$JAVA_HOME" ]; then
+        abort "You must have JAVA_HOME set to run setup_hadoop_env"
+    fi
     local HADOOP_ENV=$( cat <<-EOF
 # Set Hadoop-specific environment variables here.
 
@@ -199,34 +204,32 @@ EOF
 }
 
 format_namenode() {
-    # format hdfs
+    log ""
     light_blue "Formatting namenode"
     sys "${HADOOP_HOME}/bin/hadoop namenode -format"
 }
 
 start_hadoop() {
-    # start hadoop
     log ""
     light_blue "Starting hadoop"
     sys "${HADOOP_HOME}/bin/start-all.sh"
 }
 
 test_hadoop() {
-    # test installation
     log ""
     light_blue "Testing hadoop"
-    INDENT="        "
-    light_blue "Creating a /user/test directory in hdfs"
-    sys "${HADOOP_HOME}/bin/hadoop fs -mkdir /user/test"
 
-    light_blue "Ensure the directory was created with 'fs -ls /user'"
-    local hadoop_check=$("${HADOOP_HOME}/bin/hadoop" fs -ls /user)
-    if [[ "${hadoop_check}" =~ .*/user/test ]]; then
-        light_blue "Check looks good, removing directory"
-        sys "${HADOOP_HOME}/bin/hadoop fs -rmr /user/test"
-    else
-        abort "Unable to create the directory in HDFS"
-    fi
+    local hdfs_dir="/user/test"
+    INDENT="        "
+    light_blue "Creating a directory in hdfs"
+    sys "${HADOOP_HOME}/bin/hadoop fs -mkdir ${hdfs_dir}"
+
+    light_blue "Ensuring the directory was created"
+    sys "${HADOOP_HOME}/bin/hadoop fs -ls ${hdfs_dir}"
+
+
+    light_blue "Check looks good, removing directory"
+    sys "${HADOOP_HOME}/bin/hadoop fs -rmr ${hdfs_dir}"
 
     INDENT="  "
     green "Hadoop is installed and running"
