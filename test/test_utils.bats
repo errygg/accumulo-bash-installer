@@ -733,7 +733,7 @@ test_function_called() {
     run sys "${cmd}" "true"
 
     # assert
-    assert_no_error
+    assert_error
     assert_output_matches "Error running ${cmd}"
 }
 

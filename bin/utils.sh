@@ -185,7 +185,7 @@ _tee() {
 
 sys() {
     local CMD=$1
-    local continue=$2 # won't abort if failure
+    local continue=$2 # won't abort on failure, you must handle it
     light_blue "Running system command '${CMD}'"
     # execute a system command, tee'ing the results to the log file
     ORIG_INDENT="${INDENT}" && INDENT=""
