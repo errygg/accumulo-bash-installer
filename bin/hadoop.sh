@@ -30,7 +30,7 @@ install_hadoop() {
 
     INDENT="  " && log
     light_blue "Installing Hadoop..." && INDENT="    "
-    unarchive_file
+    unarchive_hadoop_file
     setup_hadoop_home
     configure_hadoop
     format_namenode
@@ -38,7 +38,7 @@ install_hadoop() {
     test_hadoop
 }
 
-unarchive_file() {
+unarchive_hadoop_file() {
     check_archive_file "${HADOOP_DEST}" "${HADOOP_SOURCE}"
     light_blue "Extracting file"
     sys "tar -xzf ${HADOOP_DEST} -C ${INSTALL_DIR}"

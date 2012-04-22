@@ -36,7 +36,7 @@ teardown() {
 }
 
 stub_install_hadoop_functions() {
-    stub_function "unarchive_file"
+    stub_function "unarchive_hadoop_file"
     stub_function "setup_hadoop_home"
     stub_function "configure_hadoop"
     stub_function "start_hadoop"
@@ -155,8 +155,8 @@ test_function_called() {
     assert_output_matches "${msg}"
 }
 
-@test "install_hadoop calls unarchive_file" {
-    stub_install_hadoop_functions && test_function_called "unarchive_file"
+@test "install_hadoop calls unarchive_hadoop_file" {
+    stub_install_hadoop_functions && test_function_called "unarchive_hadoop_file"
 }
 
 @test "install_hadoop calls setup_hadoop_home" {
@@ -181,7 +181,7 @@ test_function_called() {
 
 # test unarchive_file
 
-@test "unarchive_file calls check_archive_file with DEST and SRC" {
+@test "unarchive_hadoop_file calls check_archive_file with DEST and SRC" {
     # setup
     HADOOP_SOURCE="some source"
     HADOOP_DEST="some dest"
@@ -191,14 +191,14 @@ test_function_called() {
     }"
 
     # execute
-    run unarchive_file
+    run unarchive_hadoop_file
 
     # assert
     assert_no_error
     assert_output_matches "check_archive_file ${HADOOP_DEST} ${HADOOP_SOURCE}"
 }
 
-@test "unarchive_file extracts the file into INSTALL_DIR" {
+@test "unarchive_hadoop_file extracts the file into INSTALL_DIR" {
     # setup
     HADOOP_DEST="some other dest"
     stub_function "check_archive_file"
@@ -207,7 +207,7 @@ test_function_called() {
     }"
 
     # execute
-    run unarchive_file
+    run unarchive_hadoop_file
 
     # assert
     assert_no_error
