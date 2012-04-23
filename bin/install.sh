@@ -23,8 +23,11 @@ source "$(_script_dir)/post_install.sh"
 # setup some variables
 ARCHIVE_DIR="${HOME}/.accumulo-install-archive" # default
 LOG_FILE="${ARCHIVE_DIR}/install-$(date +'%Y%m%d%H%M%S').log"
+APACHE_MIRROR="http://mirror.atlanticmetro.net/apache"
 HADOOP_VERSION="0.20.2"
-HADOOP_MIRROR="http://mirror.atlanticmetro.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}"
+HADOOP_MIRROR="${APACHE_MIRROR}/hadoop/common/hadoop-${HADOOP_VERSION}"
+ZOOKEEPER_VERSION="3.3.3"
+ZOOKEEPER_MIRROR="${APACHE_MIRROR}/zookeeper/zookeeper-${ZOOKEEPER_VERSION}"
 
 set_config_file() {
     test -f $1 || abort "invalid config file, '$1' does not exist"

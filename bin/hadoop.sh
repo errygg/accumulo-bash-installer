@@ -46,9 +46,9 @@ configure_hadoop() {
     # configure properties, these are very specific to the version
     light_blue "Configuring hadoop"
     INDENT="      "
+    configure_hadoop_home
     local HADOOP_CONF="${HADOOP_HOME}/conf"
     light_blue "HADOOP_CONF set to ${HADOOP_CONF}"
-    configure_hadoop_home
     configure_core_site
     configure_mapred_site
     configure_hdfs_site

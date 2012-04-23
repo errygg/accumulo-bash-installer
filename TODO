@@ -8,6 +8,7 @@
   -- update utils and test_utils once know how to grep jps for running
 - Code post install and test
   -- source cloud-env.sh
+- Cleanup finished posted to LOG_FILE after it is moved, reset LOG_FILE variable after move
 - Update readme
   -- explain use cases (local development, multiple versions, isolation, hardware not vm)
 - Test on linux
