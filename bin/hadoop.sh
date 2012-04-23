@@ -31,9 +31,7 @@ install_hadoop() {
     INDENT="  " && log
     light_blue "Installing Hadoop..." && INDENT="    "
     unarchive_hadoop_file
-    setup_hadoop_home
     configure_hadoop
-    format_namenode
     start_hadoop
     test_hadoop
 }
@@ -44,7 +42,47 @@ unarchive_hadoop_file() {
     sys "tar -xzf ${HADOOP_DEST} -C ${INSTALL_DIR}"
 }
 
-setup_hadoop_home() {
+configure_hadoop() {
+    # configure properties, these are very specific to the version
+    light_blue "Configuring hadoop"
+    INDENT="      "
+    local HADOOP_CONF="${HADOOP_HOME}/conf"
+    light_blue "HADOOP_CONF set to ${HADOOP_CONF}"
+    configure_hadoop_home
+    configure_core_site
+    configure_mapred_site
+    configure_hdfs_site
+    configure_hadoop_env
+    configure_namenode
+}
+
+start_hadoop() {
+    log ""
+    light_blue "Starting hadoop"
+    sys "${HADOOP_HOME}/bin/start-all.sh"
+}
+
+test_hadoop() {
+    log ""
+    light_blue "Testing hadoop"
+
+    local hdfs_dir="/user/test"
+    INDENT="        "
+    light_blue "Creating a directory in hdfs"
+    sys "${HADOOP_HOME}/bin/hadoop fs -mkdir ${hdfs_dir}"
+
+    light_blue "Ensuring the directory was created"
+    sys "${HADOOP_HOME}/bin/hadoop fs -ls ${hdfs_dir}"
+
+
+    light_blue "Check looks good, removing directory"
+    sys "${HADOOP_HOME}/bin/hadoop fs -rmr ${hdfs_dir}"
+
+    INDENT="  "
+    green "Hadoop is installed and running"
+}
+
+configure_hadoop_home() {
     # setup directory
     local HADOOP_DIR="${INSTALL_DIR}/hadoop-${HADOOP_VERSION}"
     HADOOP_HOME="${INSTALL_DIR}/hadoop"
@@ -52,19 +90,7 @@ setup_hadoop_home() {
     light_blue "HADOOP_HOME set to ${HADOOP_HOME}"
 }
 
-configure_hadoop() {
-    # configure properties, these are very specific to the version
-    light_blue "Configuring hadoop"
-    INDENT="      "
-    local HADOOP_CONF="${HADOOP_HOME}/conf"
-    light_blue "HADOOP_CONF set to ${HADOOP_CONF}"
-    setup_core_site
-    setup_mapred_site
-    setup_hdfs_site
-    setup_hadoop_env
-}
-
-setup_core_site() {
+configure_core_site() {
 
     light_blue "Setting up core-site.xml"
     local CORE_SITE=$( cat <<-EOF
@@ -84,7 +110,7 @@ EOF
     echo "${CORE_SITE}" > "${HADOOP_CONF}/core-site.xml"
 }
 
-setup_mapred_site() {
+configure_mapred_site() {
     light_blue "Setting up mapred-site.xml"
     local MAPRED_SITE=$( cat <<-EOF
 <?xml version="1.0"?>
@@ -103,7 +129,7 @@ EOF
     echo "${MAPRED_SITE}" > "${HADOOP_CONF}/mapred-site.xml"
 }
 
-setup_hdfs_site() {
+configure_hdfs_site() {
     light_blue "Setting up hdfs-site.xml"
     if [ -z "$HDFS_DIR" ]; then
         abort "You must have HDFS_DIR set to run setup_hdfs_site"
@@ -136,7 +162,7 @@ EOF
     echo "${HDFS_SITE}" > "${HADOOP_CONF}/hdfs-site.xml"
 }
 
-setup_hadoop_env() {
+configure_hadoop_env() {
     light_blue "Setting up hadoop-env.sh"
     if [ -z "$JAVA_HOME" ]; then
         abort "You must have JAVA_HOME set to run setup_hadoop_env"
@@ -203,36 +229,10 @@ EOF
     echo "${HADOOP_ENV}" > "${HADOOP_CONF}/hadoop-env.sh"
 }
 
-format_namenode() {
+configure_namenode() {
     log ""
     light_blue "Formatting namenode"
     sys "${HADOOP_HOME}/bin/hadoop namenode -format"
-}
-
-start_hadoop() {
-    log ""
-    light_blue "Starting hadoop"
-    sys "${HADOOP_HOME}/bin/start-all.sh"
-}
-
-test_hadoop() {
-    log ""
-    light_blue "Testing hadoop"
-
-    local hdfs_dir="/user/test"
-    INDENT="        "
-    light_blue "Creating a directory in hdfs"
-    sys "${HADOOP_HOME}/bin/hadoop fs -mkdir ${hdfs_dir}"
-
-    light_blue "Ensuring the directory was created"
-    sys "${HADOOP_HOME}/bin/hadoop fs -ls ${hdfs_dir}"
-
-
-    light_blue "Check looks good, removing directory"
-    sys "${HADOOP_HOME}/bin/hadoop fs -rmr ${hdfs_dir}"
-
-    INDENT="  "
-    green "Hadoop is installed and running"
 }
 
 # END hadoop.sh
