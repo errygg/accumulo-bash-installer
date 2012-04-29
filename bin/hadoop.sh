@@ -92,7 +92,7 @@ configure_hadoop_conf() {
     if [ -z "$HADOOP_HOME" ]; then
         abort "You must set HADOOP_HOME to call configure_hadoop_conf"
     fi
-    local HADOOP_CONF="${HADOOP_HOME}/conf"
+    HADOOP_CONF="${HADOOP_HOME}/conf"
     light_blue "HADOOP_CONF set to ${HADOOP_CONF}"
 }
 
