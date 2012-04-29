@@ -209,25 +209,12 @@ test_function_called() {
 
 stub_conf_functions() {
     stub_function "configure_hadoop_home"
+    stub_function "configure_hadoop_conf"
     stub_function "configure_core_site"
     stub_function "configure_mapred_site"
     stub_function "configure_hdfs_site"
     stub_function "configure_hadoop_env"
     stub_function "configure_namenode"
-}
-
-@test "configure_hadoop sets HADOOP_CONF" {
-    # setup
-    stub_conf_functions
-    HADOOP_HOME="${INSTALL_DIR}/hadoop"
-
-    # execute
-    run configure_hadoop
-
-    # assert
-    assert_no_error
-    assert_output_matches "HADOOP_CONF set to ${INSTALL_DIR}/hadoop/conf"
-
 }
 
 test_conf_function_called() {
@@ -246,6 +233,10 @@ test_conf_function_called() {
 
 @test "configure_hadoop calls configure_hadoop_home" {
     stub_conf_functions && test_conf_function_called "configure_hadoop_home"
+}
+
+@test "configure_hadoop calls configure_hadoop_conf" {
+    stub_conf_functions && test_conf_function_called "configure_hadoop_conf"
 }
 
 @test "configure_hadoop calls configure_core_site" {
@@ -364,6 +355,31 @@ test_conf_function_called() {
     assert_output_matches "HADOOP_HOME set to ${INSTALL_DIR}/hadoop"
 }
 
+# test configure_hadoop_conf
+
+@test "configure_hadoop_conf fails if HADOOP_HOME not set" {
+    # setup
+    unset HADOOP_HOME
+
+    # execute
+    run configure_hadoop_conf
+
+    # assert
+    assert_error
+    assert_output_matches "You must set HADOOP_HOME to call configure_hadoop_conf"
+}
+
+@test "configure_hadoop_conf sets HADOOP_CONF" {
+    # setup
+    HADOOP_HOME="${TMP_DIR}/somehadoophome"
+
+    # execute
+    run configure_hadoop_conf
+
+    # assert
+    assert_no_error
+    assert_output_matches "HADOOP_CONF set to ${HADOOP_HOME}/conf"
+}
 
 # test configure_core_site
 

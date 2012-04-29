@@ -47,8 +47,7 @@ configure_hadoop() {
     light_blue "Configuring hadoop"
     INDENT="      "
     configure_hadoop_home
-    local HADOOP_CONF="${HADOOP_HOME}/conf"
-    light_blue "HADOOP_CONF set to ${HADOOP_CONF}"
+    configure_hadoop_conf
     configure_core_site
     configure_mapred_site
     configure_hdfs_site
@@ -83,11 +82,18 @@ test_hadoop() {
 }
 
 configure_hadoop_home() {
-    # setup directory
     local HADOOP_DIR="${INSTALL_DIR}/hadoop-${HADOOP_VERSION}"
     HADOOP_HOME="${INSTALL_DIR}/hadoop"
     sys "ln -s ${HADOOP_DIR} ${HADOOP_HOME}"
     light_blue "HADOOP_HOME set to ${HADOOP_HOME}"
+}
+
+configure_hadoop_conf() {
+    if [ -z "$HADOOP_HOME" ]; then
+        abort "You must set HADOOP_HOME to call configure_hadoop_conf"
+    fi
+    local HADOOP_CONF="${HADOOP_HOME}/conf"
+    light_blue "HADOOP_CONF set to ${HADOOP_CONF}"
 }
 
 configure_core_site() {
