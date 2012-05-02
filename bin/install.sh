@@ -28,6 +28,8 @@ HADOOP_VERSION="0.20.2"
 HADOOP_MIRROR="${APACHE_MIRROR}/hadoop/common/hadoop-${HADOOP_VERSION}"
 ZOOKEEPER_VERSION="3.3.3"
 ZOOKEEPER_MIRROR="${APACHE_MIRROR}/zookeeper/zookeeper-${ZOOKEEPER_VERSION}"
+ACCUMULO_VERSION="1.4.0"
+ACCUMULO_MIRROR="${APACHE_MIRROR}/accumulo/${ACCUMULO_VERSION}"
 
 set_config_file() {
     test -f $1 || abort "invalid config file, '$1' does not exist"
@@ -52,7 +54,7 @@ usage () {
   Description: Installs Hadoop, Zookeeper and Accumulo in one directory
                and configures them for local development.  A log file is
                created and the location is displayed if you want to review
-               the install
+               the install.
 
   Options:
 

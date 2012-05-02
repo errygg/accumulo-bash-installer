@@ -53,11 +53,15 @@ configure_zookeeper() {
 }
 
 start_zookeeper() {
-    a=1
+    log ""
+    light_blue "Starting zookeeper"
+    sys "${ZOOKEEPER_HOME}/bin/zkServer.sh start"
 }
 
 test_zookeeper() {
-    a=1
+    log ""
+    light_blue "Testing zookeeper"
+    # TODO - Test that zookeeper works here
 }
 
 configure_zookeeper_data_dir() {

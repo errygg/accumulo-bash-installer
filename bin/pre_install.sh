@@ -9,8 +9,10 @@ _uname() {
 check_os() {
   # check os
     local PLATFORM=`_uname`
+    light_blue "You are installing to OS: "
     case $PLATFORM in
-        "Darwin") light_blue "You are installing to OS: ${PLATFORM}" ;;
+        "Darwin") light_blue "${PLATFORM}" ;;
+        "Linux") light_blue "${PLATFORM}" ;;
         *)
             abort "Installer does not support ${PLATFORM}"
     esac
